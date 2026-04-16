@@ -62,12 +62,91 @@ pnpm start:gateway  # gateway on :3000
 
 ---
 
-## 五、推荐测试流程
+## 五、完整接口速查表
+
+> 所有接口均通过网关 `:3000` 访问，下游服务无需手动调用。
+
+### Users（用户接口）
+
+| 方法 | 路径 | 说明 | Body |
+|------|------|------|------|
+| `GET` | `http://localhost:3000/api/users` | 查询所有用户 | 无 |
+| `GET` | `http://localhost:3000/api/users/{id}` | 查询单个用户 | 无 |
+| `POST` | `http://localhost:3000/api/users` | 创建用户 | 见下 |
+| `PATCH` | `http://localhost:3000/api/users/{id}` | 更新用户 | 见下 |
+| `DELETE` | `http://localhost:3000/api/users/{id}` | 删除用户（返回 204） | 无 |
+
+**POST /api/users — 请求 Body：**
+```json
+{
+  "name": "Alice",
+  "email": "alice@example.com",
+  "role": "user"
+}
+```
+> `role` 可选值：`"user"` | `"admin"`，默认 `"user"`
+
+**PATCH /api/users/{id} — 请求 Body（字段均可选）：**
+```json
+{
+  "name": "Alice Updated",
+  "email": "new@example.com",
+  "role": "admin"
+}
+```
+
+---
+
+### Orders（订单接口）
+
+| 方法 | 路径 | 说明 | Body |
+|------|------|------|------|
+| `GET` | `http://localhost:3000/api/orders` | 查询所有订单 | 无 |
+| `GET` | `http://localhost:3000/api/orders/{id}` | 查询单个订单 | 无 |
+| `GET` | `http://localhost:3000/api/orders/user/{userId}` | 查询某用户的所有订单 | 无 |
+| `POST` | `http://localhost:3000/api/orders` | 创建订单 | 见下 |
+| `PATCH` | `http://localhost:3000/api/orders/{id}` | 更新订单 | 见下 |
+| `DELETE` | `http://localhost:3000/api/orders/{id}` | 删除订单（返回 204） | 无 |
+
+**POST /api/orders — 请求 Body：**
+```json
+{
+  "userId": "替换为真实的用户 id",
+  "description": "My First Order",
+  "amount": 99.99
+}
+```
+> `amount` 必须 > 0；`description` 可选
+
+**PATCH /api/orders/{id} — 请求 Body（字段均可选）：**
+```json
+{
+  "status": "paid",
+  "description": "Updated description",
+  "amount": 199.99
+}
+```
+> `status` 状态流转：`pending` → `paid` → `shipped` → `completed` / `cancelled`
+
+---
+
+### 直连下游（调试用，绕过网关）
+
+| 方法 | 路径 | 说明 |
+|------|------|------|
+| `GET` | `http://localhost:3001/users` | 直接访问 user-service |
+| `GET` | `http://localhost:3002/orders` | 直接访问 order-service |
+
+---
+
+## 六、推荐测试流程
 
 ### Step 1 — 创建用户
 
-选择 `🌐 Gateway > Users > POST 创建用户`，Body 已预填：
-
+**方法**：`POST`  
+**URL**：`http://localhost:3000/api/users`  
+**Headers**：`Content-Type: application/json`  
+**Body**：
 ```json
 {
   "name": "Alice",
@@ -77,7 +156,6 @@ pnpm start:gateway  # gateway on :3000
 ```
 
 点击 **Send**，响应示例：
-
 ```json
 {
   "id": "a1b2c3d4-...",
@@ -94,14 +172,19 @@ pnpm start:gateway  # gateway on :3000
 
 ### Step 2 — 查询所有用户
 
-选择 `GET 查询所有用户`，点击 **Send**，验证返回数组包含刚创建的用户。
+**方法**：`GET`  
+**URL**：`http://localhost:3000/api/users`  
+
+点击 **Send**，验证返回数组包含刚创建的用户。
 
 ---
 
 ### Step 3 — 创建订单（依赖 user_id）
 
-选择 `🌐 Gateway > Orders > POST 创建订单`，Body：
-
+**方法**：`POST`  
+**URL**：`http://localhost:3000/api/orders`  
+**Headers**：`Content-Type: application/json`  
+**Body**：
 ```json
 {
   "userId": "{{ _.user_id }}",
@@ -118,8 +201,10 @@ pnpm start:gateway  # gateway on :3000
 
 ### Step 4 — 更新订单状态
 
-选择 `PATCH 更新订单状态`，Body：
-
+**方法**：`PATCH`  
+**URL**：`http://localhost:3000/api/orders/{{ _.order_id }}`  
+**Headers**：`Content-Type: application/json`  
+**Body**：
 ```json
 { "status": "paid" }
 ```
@@ -143,16 +228,17 @@ pnpm start:gateway  # gateway on :3000
 
 ### Step 6 — 测试错误场景
 
-| 场景 | 操作 | 预期状态码 |
-|------|------|-----------|
-| 创建用户时缺少 email | POST /api/users，body 去掉 email | **400** Bad Request |
-| 查询不存在的用户 | GET /api/users/00000000-... | **404** Not Found |
-| 重复 email | POST /api/users，相同 email 发两次 | **409** Conflict |
-| 停掉 user-service 后访问 | kill :3001 进程后 GET /api/users | **502** Bad Gateway |
+| 场景 | 方法 | URL | Body | 预期状态码 |
+|------|------|-----|------|-----------|
+| 缺少必填字段 | `POST` | `/api/users` | `{"name":"Bob"}` | **400** Bad Request |
+| 资源不存在 | `GET` | `/api/users/00000000-0000-0000-0000-000000000000` | 无 | **404** Not Found |
+| Email 重复 | `POST` | `/api/users` | 与已有用户相同 email | **409** Conflict |
+| 无效状态值 | `PATCH` | `/api/orders/{id}` | `{"status":"invalid"}` | **400** Bad Request |
+| 下游不可用 | `GET` | `/api/users` | 无（先停掉 user-service） | **502** Bad Gateway |
 
 ---
 
-## 六、使用技巧
+## 七、使用技巧
 
 ### 快速复制响应字段到环境变量
 
@@ -170,7 +256,7 @@ Insomnia 支持在请求 Body 中用 **Response → Body** 引用上一个请求
 
 ---
 
-## 七、与自动化测试的关系
+## 八、与自动化测试的关系
 
 | 工具 | 适用场景 |
 |------|---------|
