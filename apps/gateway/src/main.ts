@@ -1,9 +1,22 @@
 import { NestFactory } from '@nestjs/core';
+import { ValidationPipe, Logger } from '@nestjs/common';
 import { AppModule } from './app.module';
 
 async function bootstrap() {
   const app = await NestFactory.create(AppModule);
-  await app.listen(process.env.PORT ?? 3000);
-  console.log('Gateway is running on port 3000');
+  const logger = new Logger('Gateway');
+
+  app.useGlobalPipes(
+    new ValidationPipe({
+      whitelist: true,
+      transform: true,
+      forbidNonWhitelisted: true,
+    }),
+  );
+
+  await app.listen(3000);
+  logger.log('Gateway is running on http://localhost:3000');
+  logger.log('Proxying:  /api/users  → http://localhost:3001');
+  logger.log('Proxying:  /api/orders → http://localhost:3002');
 }
 bootstrap();
