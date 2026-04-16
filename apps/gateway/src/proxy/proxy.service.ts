@@ -10,6 +10,7 @@ import { Request, Response } from 'express';
 import { firstValueFrom } from 'rxjs';
 import { AxiosError } from 'axios';
 import { ProxyRoute, PROXY_ROUTES_TOKEN } from '../config/proxy-routes.config';
+import type { RequestUser } from '../auth/jwt.strategy';
 
 @Injectable()
 export class ProxyService {
@@ -84,6 +85,7 @@ export class ProxyService {
 
   /**
    * 构造转发 headers：透传原始 headers，去掉 host
+   * 同时将网关解析的用户身份注入给下游（x-user-id / x-user-role）
    */
   private buildForwardHeaders(req: Request): Record<string, string> {
     const headers: Record<string, string> = {};
@@ -98,6 +100,14 @@ export class ProxyService {
     // 标记请求来自网关
     headers['x-forwarded-by'] = 'nest-gateway';
     headers['x-forwarded-for'] = req.ip ?? '';
+
+    // 注入用户身份，下游可直接读取 headers['x-user-id'] 获取当前用户
+    const user = (req as Request & { user?: RequestUser }).user;
+    if (user) {
+      headers['x-user-id'] = user.userId;
+      headers['x-user-role'] = user.role;
+      headers['x-user-email'] = user.email;
+    }
 
     return headers;
   }
