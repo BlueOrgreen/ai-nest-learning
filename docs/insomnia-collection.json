@@ -1,0 +1,203 @@
+{
+  "_type": "export",
+  "__export_format": 4,
+  "__export_date": "2026-04-16T00:00:00.000Z",
+  "__export_source": "insomnia.desktop.app:v9",
+  "resources": [
+    {
+      "_id": "wrk_nest_gateway",
+      "_type": "workspace",
+      "name": "NestJS Gateway",
+      "description": "网关服务 + user-service + order-service 接口集合",
+      "scope": "collection"
+    },
+    {
+      "_id": "env_base",
+      "_type": "environment",
+      "parentId": "wrk_nest_gateway",
+      "name": "Base Environment",
+      "data": {
+        "gateway_url": "http://localhost:3000",
+        "user_service_url": "http://localhost:3001",
+        "order_service_url": "http://localhost:3002",
+        "user_id": "",
+        "order_id": ""
+      }
+    },
+    {
+      "_id": "fld_gateway",
+      "_type": "request_group",
+      "parentId": "wrk_nest_gateway",
+      "name": "🌐 Gateway（通过网关访问）",
+      "description": "所有请求通过网关 :3000 转发"
+    },
+    {
+      "_id": "fld_gateway_users",
+      "_type": "request_group",
+      "parentId": "fld_gateway",
+      "name": "Users（/api/users）"
+    },
+    {
+      "_id": "req_gw_users_list",
+      "_type": "request",
+      "parentId": "fld_gateway_users",
+      "name": "GET 查询所有用户",
+      "method": "GET",
+      "url": "{{ _.gateway_url }}/api/users",
+      "headers": [],
+      "body": {}
+    },
+    {
+      "_id": "req_gw_users_create",
+      "_type": "request",
+      "parentId": "fld_gateway_users",
+      "name": "POST 创建用户",
+      "method": "POST",
+      "url": "{{ _.gateway_url }}/api/users",
+      "headers": [
+        { "name": "Content-Type", "value": "application/json" }
+      ],
+      "body": {
+        "mimeType": "application/json",
+        "text": "{\n  \"name\": \"Alice\",\n  \"email\": \"alice@example.com\",\n  \"role\": \"user\"\n}"
+      }
+    },
+    {
+      "_id": "req_gw_users_get",
+      "_type": "request",
+      "parentId": "fld_gateway_users",
+      "name": "GET 查询单个用户",
+      "method": "GET",
+      "url": "{{ _.gateway_url }}/api/users/{{ _.user_id }}",
+      "headers": [],
+      "body": {}
+    },
+    {
+      "_id": "req_gw_users_patch",
+      "_type": "request",
+      "parentId": "fld_gateway_users",
+      "name": "PATCH 更新用户",
+      "method": "PATCH",
+      "url": "{{ _.gateway_url }}/api/users/{{ _.user_id }}",
+      "headers": [
+        { "name": "Content-Type", "value": "application/json" }
+      ],
+      "body": {
+        "mimeType": "application/json",
+        "text": "{\n  \"name\": \"Alice Updated\",\n  \"role\": \"admin\"\n}"
+      }
+    },
+    {
+      "_id": "req_gw_users_delete",
+      "_type": "request",
+      "parentId": "fld_gateway_users",
+      "name": "DELETE 删除用户",
+      "method": "DELETE",
+      "url": "{{ _.gateway_url }}/api/users/{{ _.user_id }}",
+      "headers": [],
+      "body": {}
+    },
+    {
+      "_id": "fld_gateway_orders",
+      "_type": "request_group",
+      "parentId": "fld_gateway",
+      "name": "Orders（/api/orders）"
+    },
+    {
+      "_id": "req_gw_orders_list",
+      "_type": "request",
+      "parentId": "fld_gateway_orders",
+      "name": "GET 查询所有订单",
+      "method": "GET",
+      "url": "{{ _.gateway_url }}/api/orders",
+      "headers": [],
+      "body": {}
+    },
+    {
+      "_id": "req_gw_orders_by_user",
+      "_type": "request",
+      "parentId": "fld_gateway_orders",
+      "name": "GET 按用户查询订单",
+      "method": "GET",
+      "url": "{{ _.gateway_url }}/api/orders/user/{{ _.user_id }}",
+      "headers": [],
+      "body": {}
+    },
+    {
+      "_id": "req_gw_orders_create",
+      "_type": "request",
+      "parentId": "fld_gateway_orders",
+      "name": "POST 创建订单",
+      "method": "POST",
+      "url": "{{ _.gateway_url }}/api/orders",
+      "headers": [
+        { "name": "Content-Type", "value": "application/json" }
+      ],
+      "body": {
+        "mimeType": "application/json",
+        "text": "{\n  \"userId\": \"{{ _.user_id }}\",\n  \"description\": \"My First Order\",\n  \"amount\": 99.99\n}"
+      }
+    },
+    {
+      "_id": "req_gw_orders_get",
+      "_type": "request",
+      "parentId": "fld_gateway_orders",
+      "name": "GET 查询单个订单",
+      "method": "GET",
+      "url": "{{ _.gateway_url }}/api/orders/{{ _.order_id }}",
+      "headers": [],
+      "body": {}
+    },
+    {
+      "_id": "req_gw_orders_patch",
+      "_type": "request",
+      "parentId": "fld_gateway_orders",
+      "name": "PATCH 更新订单状态",
+      "method": "PATCH",
+      "url": "{{ _.gateway_url }}/api/orders/{{ _.order_id }}",
+      "headers": [
+        { "name": "Content-Type", "value": "application/json" }
+      ],
+      "body": {
+        "mimeType": "application/json",
+        "text": "{\n  \"status\": \"paid\"\n}"
+      }
+    },
+    {
+      "_id": "req_gw_orders_delete",
+      "_type": "request",
+      "parentId": "fld_gateway_orders",
+      "name": "DELETE 删除订单",
+      "method": "DELETE",
+      "url": "{{ _.gateway_url }}/api/orders/{{ _.order_id }}",
+      "headers": [],
+      "body": {}
+    },
+    {
+      "_id": "fld_direct",
+      "_type": "request_group",
+      "parentId": "wrk_nest_gateway",
+      "name": "🔧 直连下游（绕过网关，调试用）"
+    },
+    {
+      "_id": "req_direct_users_list",
+      "_type": "request",
+      "parentId": "fld_direct",
+      "name": "user-service: GET /users",
+      "method": "GET",
+      "url": "{{ _.user_service_url }}/users",
+      "headers": [],
+      "body": {}
+    },
+    {
+      "_id": "req_direct_orders_list",
+      "_type": "request",
+      "parentId": "fld_direct",
+      "name": "order-service: GET /orders",
+      "method": "GET",
+      "url": "{{ _.order_service_url }}/orders",
+      "headers": [],
+      "body": {}
+    }
+  ]
+}
