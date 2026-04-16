@@ -134,7 +134,35 @@ Client Request
 
 ---
 
-## 六、学习目标检验
+## 六、Git 提交规范
+
+每完成设计文档中的一个实现步骤，AI 编码后自动提交一次，便于回溯每个阶段的代码状态。
+
+**Commit message 格式：**
+
+```
+feat(step-N): <任务描述>
+```
+
+**对应关系：**
+
+| Commit | 描述 |
+|--------|------|
+| `feat(step-1)`: 改造为 NestJS Monorepo | 创建 gateway / user-service / order-service |
+| `feat(step-2)`: 实现 user-service CRUD 接口 | Controller、Service、DTO |
+| `feat(step-3)`: 实现 order-service 订单接口 | Controller、Service、DTO |
+| `feat(step-4)`: 网关实现动态路由转发（HTTP） | HttpModule、反向代理 |
+| `feat(step-5)`: 实现 JWT 认证 & 角色鉴权 | @nestjs/jwt、PassportModule、Guards |
+| `feat(step-6)`: 实现全局限流 | @nestjs/throttler、ThrottlerGuard |
+| `feat(step-7)`: 实现统一日志、响应、异常处理 | Interceptor、ExceptionFilter |
+| `feat(step-8)`: 实现熔断 & 重试 | opossum、axios-retry |
+| `feat(step-9)`: 下游服务添加 TCP 监听 | createMicroservice、@MessagePattern |
+| `feat(step-10)`: 网关改用 ClientsModule（TCP） | ClientProxy、send()、emit() |
+| `feat(step-11)`: 对比总结 HTTP vs TCP 模式 | 补充对比文档 |
+
+---
+
+## 七、学习目标检验
 
 完成本项目后，应能回答以下问题：
 
