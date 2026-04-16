@@ -14,8 +14,9 @@ async function bootstrap() {
     }),
   );
 
-  await app.listen(3000);
-  logger.log('Gateway is running on http://localhost:3000');
+  const port = process.env.PORT ?? 3010;
+  await app.listen(port);
+  logger.log(`Gateway is running on http://localhost:${port}`);
   logger.log('Proxying:  /api/users  → http://localhost:3001');
   logger.log('Proxying:  /api/orders → http://localhost:3002');
 }

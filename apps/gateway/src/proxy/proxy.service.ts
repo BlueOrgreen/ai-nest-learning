@@ -39,7 +39,7 @@ export class ProxyService {
     // 透传 headers（过滤掉 host，避免下游服务混淆）
     const headers = this.buildForwardHeaders(req);
 
-    this.logger.log(`[PROXY] ${req.method} ${req.path} → ${fullUrl}`);
+    this.logger.log(`[PROXY] [Yunfan] ${req.method} ${req.path} → ${fullUrl}`);
 
     try {
       const response = await firstValueFrom(
