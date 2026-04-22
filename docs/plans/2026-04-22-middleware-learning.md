@@ -412,13 +412,13 @@ app.enableCors();  // 在所有中间件之前，处理 OPTIONS 预检请求
 
 ## 七、关键知识点总结 🧠
 
-| 知识点 | 说明 |
-|--------|------|
-| 执行顺序 | Middleware → Guard → Interceptor → Pipe → Controller |
-| 函数式 vs 类式 | 需要注入 Service 用类式，否则函数式更简洁 |
-| `next()` 必须调用 | 否则请求卡住，不会继续往下走 |
-| `res.on('finish')` | 获取响应状态码和计算耗时的正确方式 |
-| `app.use()` vs `configure()` | 前者更早、只能函数式；后者在 DI 容器内、支持类中间件 |
-| 多中间件顺序 | `apply(A, B)` 按参数顺序执行，A 先于 B |
-| 中间件无法读路由元数据 | 这是它与 Guard 的核心区别 |
-| 审计日志用 Interceptor | 因为需要 `req.user`，而该字段由 JwtAuthGuard 写入，Guard 在 Middleware 之后 |
+| 知识点　　　　　　　　　　　 | 说明　　　　　　　　　　　　　　　　　　　　　　　　　　　　　　　　　　　　|
+| ------------------------------| -----------------------------------------------------------------------------|
+| 执行顺序　　　　　　　　　　 | Middleware → Guard → Interceptor → Pipe → Controller　　　　　　　　　　　　|
+| 函数式 vs 类式　　　　　　　 | 需要注入 Service 用类式，否则函数式更简洁　　　　　　　　　　　　　　　　　 |
+| `next()` 必须调用　　　　　　| 否则请求卡住，不会继续往下走　　　　　　　　　　　　　　　　　　　　　　　　|
+| `res.on('finish')`　　　　　 | 获取响应状态码和计算耗时的正确方式　　　　　　　　　　　　　　　　　　　　　|
+| `app.use()` vs `configure()` | 前者更早、只能函数式；后者在 DI 容器内、支持类中间件　　　　　　　　　　　　|
+| 多中间件顺序　　　　　　　　 | `apply(A, B)` 按参数顺序执行，A 先于 B　　　　　　　　　　　　　　　　　　　|
+| 中间件无法读路由元数据　　　 | 这是它与 Guard 的核心区别　　　　　　　　　　　　　　　　　　　　　　　　　 |
+| 审计日志用 Interceptor　　　 | 因为需要 `req.user`，而该字段由 JwtAuthGuard 写入，Guard 在 Middleware 之后 |
