@@ -526,3 +526,46 @@ curl http://localhost:3001/health
   "details": { "database": { "status": "up" } }
 }
 ```
+
+---
+
+## 十二、Git 提交记录
+
+| 字段 | 内容 |
+|------|------|
+| **commit** | `23e9049` |
+| **branch** | `main` |
+| **date** | 2026-04-22 |
+| **message** | `feat: add shared database lib and health check endpoints` |
+
+### 提交内容摘要
+
+| 类型 | 文件 | 说明 |
+|------|------|------|
+| 新增 | `libs/database/src/database.module.ts` | TypeORM 共享连接配置 |
+| 新增 | `libs/database/src/database.health.ts` | DatabaseHealthModule（封装 TypeOrmHealthIndicator） |
+| 新增 | `libs/database/src/index.ts` | lib 统一导出入口 |
+| 新增 | `libs/database/tsconfig.lib.json` | lib 专属 TS 编译配置 |
+| 新增 | `apps/user-service/src/health/health.controller.ts` | GET /health 健康检查接口 |
+| 新增 | `apps/order-service/src/health/health.controller.ts` | GET /health 健康检查接口 |
+| 新增 | `.env.example` | 公共环境变量模板 |
+| 新增 | `apps/user-service/.env.example` | user-service 环境变量模板 |
+| 新增 | `apps/order-service/.env.example` | order-service 环境变量模板 |
+| 新增 | `docs/plans/2026-04-22-database-lib.md` | 本文档 |
+| 新增 | `docs/notes/2026-04-22-typeorm-forRootAsync-explained.md` | TypeORM + ConfigModule 学习笔记 |
+| 修改 | `apps/user-service/src/app.module.ts` | 替换原有 TypeOrmModule，改用 DatabaseModule |
+| 修改 | `apps/order-service/src/app.module.ts` | 替换原有 TypeOrmModule，改用 DatabaseModule |
+| 修改 | `apps/gateway/src/config/proxy-routes.config.ts` | 添加 /health/user 和 /health/order 代理路由 |
+| 修改 | `apps/gateway/src/proxy/proxy.controller.ts` | 修正 @Public() 使用位置，拆分 orders 路由 |
+| 修改 | `nest-cli.json` | 注册 database lib |
+| 修改 | `tsconfig.json` | 添加 @app/database 路径别名 |
+| 修改 | `.gitignore` | 新增 apps/user-service/.env 和 apps/order-service/.env 忽略规则 |
+| 修改 | `package.json` / `pnpm-lock.yaml` | 安装 @nestjs/terminus |
+
+### 遇到的问题与修正
+
+**问题**：`@Public()` 加在 `order-service/orders.controller.ts` 上无效，访问网关接口仍返回 401。
+
+**根因**：`JwtAuthGuard` 是 Gateway 的全局守卫，请求在 Gateway 层就已被拦截，`order-service` 的装饰器根本无法生效。
+
+**修正**：在 `ProxyController` 中为 `/api/orders` 和 `/api/orders/:path(*)` 单独定义路由并标注 `@Public()`，同时移除 `order-service` 中错误的跨服务导入。
