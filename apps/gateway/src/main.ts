@@ -1,6 +1,9 @@
-import { NestFactory } from '@nestjs/core';
+import { NestFactory, Reflector } from '@nestjs/core';
 import { ValidationPipe, Logger } from '@nestjs/common';
 import { AppModule } from './app.module';
+import { AllExceptionsFilter } from './filters/all-exceptions.filter';
+import { LoggingInterceptor } from './interceptors/logging.interceptor';
+import { TransformInterceptor } from './interceptors/transform.interceptor';
 
 async function bootstrap() {
   const app = await NestFactory.create(AppModule);
@@ -26,6 +29,17 @@ async function bootstrap() {
       transform: true,
       forbidNonWhitelisted: true,
     }),
+  );
+
+  // 全局异常过滤器（最先注册，兜底所有未捕获异常）
+  app.useGlobalFilters(new AllExceptionsFilter());
+
+  // 全局拦截器（注册顺序 = 执行顺序）
+  // ① LoggingInterceptor  — 记录 handler 名称、耗时、状态码
+  // ② TransformInterceptor — 包装成功响应（@SkipTransform() 可跳过）
+  app.useGlobalInterceptors(
+    new LoggingInterceptor(),
+    new TransformInterceptor(new Reflector()),
   );
 
   const port = process.env.PORT ?? 3010;
