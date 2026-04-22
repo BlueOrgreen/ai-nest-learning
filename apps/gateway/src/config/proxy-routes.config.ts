@@ -18,6 +18,20 @@ export const PROXY_ROUTES: ProxyRoute[] = [
     target: 'http://localhost:3002',
     stripPrefix: '/api',
   },
+  // ── 健康检查路由 ──────────────────────────────────────────────────────────
+  // GET /health/user  → http://localhost:3001/health
+  // GET /health/order → http://localhost:3002/health
+  // stripPrefix 去掉 /health/user 或 /health/order 前缀后，下游收到 /health
+  {
+    prefix: '/health/user',
+    target: 'http://localhost:3001',
+    stripPrefix: '/health/user',
+  },
+  {
+    prefix: '/health/order',
+    target: 'http://localhost:3002',
+    stripPrefix: '/health/order',
+  },
 ];
 
 export const PROXY_ROUTES_TOKEN = 'PROXY_ROUTES';
