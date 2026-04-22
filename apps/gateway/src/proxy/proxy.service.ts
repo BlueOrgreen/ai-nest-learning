@@ -101,6 +101,12 @@ export class ProxyService {
     headers['x-forwarded-by'] = 'nest-gateway';
     headers['x-forwarded-for'] = req.ip ?? '';
 
+    // 透传请求链路 ID，下游服务日志中可打印此 ID 实现全链路追踪
+    const requestId = req.headers['x-request-id'] as string | undefined;
+    if (requestId) {
+      headers['x-request-id'] = requestId;
+    }
+
     // 注入用户身份，下游可直接读取 headers['x-user-id'] 获取当前用户
     const user = (req as Request & { user?: RequestUser }).user;
     if (user) {
