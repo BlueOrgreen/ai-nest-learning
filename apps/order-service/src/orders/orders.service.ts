@@ -1,4 +1,4 @@
-import { Injectable, NotFoundException } from '@nestjs/common';
+import { Injectable, Logger, NotFoundException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { CreateOrderDto } from './dto/create-order.dto';
@@ -7,6 +7,8 @@ import { Order } from './entities/order.entity';
 
 @Injectable()
 export class OrdersService {
+  private readonly logger = new Logger(OrdersService.name);
+  
   constructor(
     @InjectRepository(Order)
     private readonly ordersRepo: Repository<Order>,
@@ -43,7 +45,9 @@ export class OrdersService {
   }
 
   async remove(id: string): Promise<void> {
+    // this.logger.debug(`1.[Yunfan-order]-${id}`)
     const order = await this.findOne(id);
+    // this.logger.debug(`2.[Yunfan-order]-${order}`)
     await this.ordersRepo.remove(order);
   }
 }

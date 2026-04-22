@@ -377,17 +377,17 @@ ConfigModule.forRoot({
 
 ## 六、知识点总结
 
-| 概念 | 要点 |
-|------|------|
-| `forRootAsync` | 异步初始化，可注入 NestJS 服务，用于读取运行时配置 |
-| `imports` | 声明工厂函数依赖的模块，即使已 `isGlobal` 也需在此声明 |
-| `inject` | 声明要注入的 provider，顺序与 `useFactory` 参数一一对应 |
-| `useFactory` | 工厂函数，返回值即为 TypeORM 连接选项对象 |
-| `ConfigModule.forRoot` | 读取 `.env` 文件，将变量注册到 DI 容器 |
-| `envFilePath` 多文件 | 数组靠前的优先级高，后面的补充缺失变量 |
-| `isGlobal: true` | 全局模块，整个应用只需注册一次 |
-| `config.get<T>` | 读取环境变量，`<T>` 仅是 TS 类型标注，不做实际转换 |
-| `.env` 类型陷阱 | 所有值都是字符串，布尔/数字需手动转换 |
-| `autoLoadEntities` | 自动收集 `forFeature` 注册的 entity，避免手动维护列表 |
-| `synchronize` | 开发环境可为 `true`，生产必须 `false` 改用 migration |
-| `extra` | mysql2 驱动特有参数（连接池等），TypeORM 不处理直接透传 |
+| 概念　　　　　　　　　 | 要点　　　　　　　　　　　　　　　　　　　　　　　　　　|
+| ------------------------| ---------------------------------------------------------|
+| `forRootAsync`　　　　 | 异步初始化，可注入 NestJS 服务，用于读取运行时配置　　　|
+| `imports`　　　　　　　| 声明工厂函数依赖的模块，即使已 `isGlobal` 也需在此声明　|
+| `inject`　　　　　　　 | 声明要注入的 provider，顺序与 `useFactory` 参数一一对应 |
+| `useFactory`　　　　　 | 工厂函数，返回值即为 TypeORM 连接选项对象　　　　　　　 |
+| `ConfigModule.forRoot` | 读取 `.env` 文件，将变量注册到 DI 容器　　　　　　　　　|
+| `envFilePath` 多文件　 | 数组靠前的优先级高，后面的补充缺失变量　　　　　　　　　|
+| `isGlobal: true`　　　 | 全局模块，整个应用只需注册一次　　　　　　　　　　　　　|
+| `config.get<T>`　　　　| 读取环境变量，`<T>` 仅是 TS 类型标注，不做实际转换　　　|
+| `.env` 类型陷阱　　　　| 所有值都是字符串，布尔/数字需手动转换　　　　　　　　　 |
+| `autoLoadEntities`　　 | 自动收集 `forFeature` 注册的 entity，避免手动维护列表　 |
+| `synchronize`　　　　　| 开发环境可为 `true`，生产必须 `false` 改用 migration　　|
+| `extra`　　　　　　　　| mysql2 驱动特有参数（连接池等），TypeORM 不处理直接透传 |

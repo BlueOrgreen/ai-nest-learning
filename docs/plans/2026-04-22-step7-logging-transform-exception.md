@@ -277,4 +277,34 @@ curl -s http://localhost:3010/api/orders | jq .
 
 ## 七、Git 提交记录
 
-> 待编码完成后填写
+| 字段 | 内容 |
+|------|------|
+| **Commit** | `097248e3da8759a0e028a820f95da9b59732e894` |
+| **分支** | `main` |
+| **时间** | 2026-04-22 23:12:44 +0800 |
+| **Message** | `feat(step7): 统一日志、响应格式、异常处理` |
+
+**变更文件（17 files changed, 1213 insertions, 39 deletions）：**
+
+```
+新增文件（create mode）：
+  apps/gateway/src/decorators/skip-transform.decorator.ts
+  apps/gateway/src/filters/all-exceptions.filter.ts
+  apps/gateway/src/interceptors/logging.interceptor.ts
+  apps/gateway/src/interceptors/transform.interceptor.ts
+  docs/notes/2026-04-22-http-code-explained.md
+  docs/notes/2026-04-22-logging-interceptor-explained.md
+  docs/plans/2026-04-22-step7-logging-transform-exception.md（本文件）
+  libs/common/src/filters/all-exceptions.filter.ts
+  libs/common/src/index.ts
+  libs/common/src/interceptors/transform.interceptor.ts
+  libs/common/tsconfig.lib.json
+
+修改文件：
+  apps/gateway/src/main.ts
+  apps/gateway/src/middlewares/logger.middleware.ts
+  apps/gateway/src/proxy/proxy.controller.ts
+  apps/order-service/src/main.ts
+  apps/user-service/src/main.ts
+  nest-cli.json
+```

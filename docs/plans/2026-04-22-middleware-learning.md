@@ -58,14 +58,14 @@ NestJS 的完整请求管道按执行顺序如下：
 
 ### 中间件 vs Guard vs Interceptor 选型对比
 
-| 维度 | Middleware | Guard | Interceptor |
-|------|-----------|-------|------------|
-| 执行时机 | 最早（路由匹配前） | Guard 之前 → 中间件之后 | Guard 之后 |
-| 能访问路由元数据？ | ❌ 不能 | ✅ 能（Reflector） | ✅ 能 |
-| 能访问 NestJS DI？ | ✅ 类中间件可以 | ✅ | ✅ |
-| 能修改响应体？ | ⚠️ 直接操作 res | ❌ | ✅ |
-| Express 中间件兼容？ | ✅ 直接复用 | ❌ | ❌ |
-| 典型场景 | 日志、request-id、CORS、body 解析 | JWT 验证、角色权限 | 响应格式统一、耗时统计 |
+| 维度　　　　　　　　 | Middleware　　　　　　　　　　　　| Guard　　　　　　　　　　| Interceptor　　　　　　|
+| ----------------------| -----------------------------------| --------------------------| ------------------------|
+| 执行时机　　　　　　 | 最早（路由匹配前）　　　　　　　　| Guard 之前 → 中间件之后　| Guard 之后　　　　　　 |
+| 能访问路由元数据？　 | ❌ 不能　　　　　　　　　　　　　　| ✅ 能（Reflector）　　　　| ✅ 能　　　　　　　　　 |
+| 能访问 NestJS DI？　 | ✅ 类中间件可以　　　　　　　　　　| ✅　　　　　　　　　　　　| ✅　　　　　　　　　　　|
+| 能修改响应体？　　　 | ⚠️ 直接操作 res　　　　　　　　　　| ❌　　　　　　　　　　　　| ✅　　　　　　　　　　　|
+| Express 中间件兼容？ | ✅ 直接复用　　　　　　　　　　　　| ❌　　　　　　　　　　　　| ❌　　　　　　　　　　　|
+| 典型场景　　　　　　 | 日志、request-id、CORS、body 解析 | JWT 验证、角色权限、限流 | 响应格式统一、耗时统计 |
 
 > 💡 **一句话选型原则**：需要复用 Express 生态 / 最早介入请求 → 用 Middleware；需要读路由元数据决定放不放行 → 用 Guard；需要包裹 Controller 前后逻辑 → 用 Interceptor。
 
@@ -260,15 +260,15 @@ async function bootstrap() {
 
 **记录字段设计**：
 
-| 字段 | 说明 | 来源 |
-|------|------|------|
-| `requestId` | 请求唯一 ID | `req.headers['x-request-id']`（依赖场景 A） |
-| `method` | HTTP 方法 | `req.method` |
-| `url` | 请求路径 | `req.originalUrl` |
-| `ip` | 客户端 IP | `req.ip` |
-| `userAgent` | 浏览器/客户端标识 | `req.headers['user-agent']` |
-| `statusCode` | 响应状态码 | `res.statusCode`（响应完成后） |
-| `duration` | 请求耗时（ms） | 进入时打点，响应完成后计算差值 |
+| 字段　　　　 | 说明　　　　　　　| 来源　　　　　　　　　　　　　　　　　　　　|
+| --------------| -------------------| ---------------------------------------------|
+| `requestId`　| 请求唯一 ID　　　 | `req.headers['x-request-id']`（依赖场景 A） |
+| `method`　　 | HTTP 方法　　　　 | `req.method`　　　　　　　　　　　　　　　　|
+| `url`　　　　| 请求路径　　　　　| `req.originalUrl`　　　　　　　　　　　　　 |
+| `ip`　　　　 | 客户端 IP　　　　 | `req.ip`　　　　　　　　　　　　　　　　　　|
+| `userAgent`　| 浏览器/客户端标识 | `req.headers['user-agent']`　　　　　　　　 |
+| `statusCode` | 响应状态码　　　　| `res.statusCode`（响应完成后）　　　　　　　|
+| `duration`　 | 请求耗时（ms）　　| 进入时打点，响应完成后计算差值　　　　　　　|
 
 **核心逻辑**：
 

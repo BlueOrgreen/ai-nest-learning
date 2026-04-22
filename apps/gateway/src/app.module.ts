@@ -1,5 +1,6 @@
 import { MiddlewareConsumer, Module, NestModule } from '@nestjs/common';
 import { APP_GUARD } from '@nestjs/core';
+import { ThrottlerGuard, ThrottlerModule } from '@nestjs/throttler';
 import { AppController } from './app.controller';
 import { AppService } from './app.service';
 import { AuthModule } from './auth/auth.module';
@@ -10,13 +11,28 @@ import { RequestIdMiddleware } from './middlewares/request-id.middleware';
 import { ProxyModule } from './proxy/proxy.module';
 
 @Module({
-  imports: [AuthModule, ProxyModule],
+  imports: [
+    // 全局限流配置（ttl 单位：毫秒，v5+）
+    // 默认策略：每个 IP 每 60 秒最多 100 次请求
+    ThrottlerModule.forRoot([
+      {
+        name: 'default',
+        ttl: 60000,
+        limit: 100,
+      },
+    ]),
+    AuthModule,
+    ProxyModule,
+  ],
   controllers: [AppController],
   providers: [
     AppService,
-    // 全局 JWT 验证：所有路由默认需要登录，@Public() 可跳过
+    // ⚡ Guard 执行顺序（按数组顺序依次执行）：
+    // ① ThrottlerGuard 必须第一：对所有请求（含未登录）计数，防止攻击者用 401 响应绕过限流
+    { provide: APP_GUARD, useClass: ThrottlerGuard },
+    // ② JWT 验证：校验 token 合法性
     { provide: APP_GUARD, useClass: JwtAuthGuard },
-    // 全局角色鉴权：@Roles('admin') 限制角色
+    // ③ 角色鉴权：校验是否有接口所需角色
     { provide: APP_GUARD, useClass: RolesGuard },
   ],
 })
