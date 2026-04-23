@@ -5,11 +5,11 @@ import {
   NotFoundException,
 } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { Repository } from 'typeorm';
+import { DataSource, Repository } from 'typeorm';
 import { CreateOrderDto } from './dto/create-order.dto';
 import { UpdateOrderDto } from './dto/update-order.dto';
 import { Order } from './entities/order.entity';
-import { ProductsService } from '../products/products.service';
+import { Product } from '../products/entities/product.entity';
 
 @Injectable()
 export class OrdersService {
@@ -18,7 +18,13 @@ export class OrdersService {
   constructor(
     @InjectRepository(Order)
     private readonly ordersRepo: Repository<Order>,
-    private readonly productsService: ProductsService,
+    /**
+     * DataSource：TypeORM 的数据源对象，持有连接池
+     * 用途：
+     *   1. dataSource.transaction()  — 写法一（推荐）
+     *   2. dataSource.createQueryRunner() — 写法二（QueryRunner 手动控制）
+     */
+    private readonly dataSource: DataSource,
   ) {}
 
   findAll(): Promise<Order[]> {
@@ -41,43 +47,106 @@ export class OrdersService {
   }
 
   /**
-   * 创建订单（阶段零版本：故意不加事务）
+   * 创建订单 — 写法一：dataSource.transaction()（推荐）
    *
-   * 流程：
-   *   1. 查询商品是否存在
-   *   2. 检查库存是否充足
-   *   3. 扣减库存（stock - quantity）
-   *   4. 创建订单记录
+   * 事务保证：扣库存 + 建订单 是原子操作
+   *   - 任何一步失败 → 自动 ROLLBACK，库存恢复
+   *   - 全部成功    → 自动 COMMIT
    *
-   * ⚠️  WARNING: 此处故意不加事务，为阶段一的学习埋下伏笔。
-   *   如果第 4 步失败，库存已经扣减但订单未创建 → 数据不一致！
-   *   阶段一将用事务修复这个问题。
+   * 注意：事务内必须用回调参数 manager 操作数据库，
+   *       不能用 this.ordersRepo（它不在当前事务连接里）
    */
   async create(dto: CreateOrderDto): Promise<Order> {
-    // 1. 查询商品
-    const product = await this.productsService.findOne(dto.productId);
+    return this.dataSource.transaction(async (manager) => {
+      // 1. 查询商品（用 manager，而不是 this.productsService）
+      const product = await manager.findOne(Product, {
+        where: { id: dto.productId },
+      });
+      if (!product) {
+        throw new NotFoundException(`Product #${dto.productId} not found`);
+      }
 
-    // 2. 检查库存
-    if (product.stock < dto.quantity) {
-      throw new BadRequestException(
-        `库存不足：商品 "${product.name}" 当前库存 ${product.stock}，需要 ${dto.quantity}`,
-      );
+      // 2. 检查库存
+      if (product.stock < dto.quantity) {
+        throw new BadRequestException(
+          `库存不足：商品 "${product.name}" 当前库存 ${product.stock}，需要 ${dto.quantity}`,
+        );
+      }
+
+      // 3. 扣减库存
+      await manager.save(Product, {
+        ...product,
+        stock: product.stock - dto.quantity,
+      });
+
+      // 4. 创建订单
+      const order = manager.create(Order, {
+        userId: dto.userId,
+        productId: dto.productId,
+        quantity: dto.quantity,
+        description: dto.description,
+        amount: Number(product.price) * dto.quantity,
+      });
+      return manager.save(Order, order);
+      // ↑ 回调正常返回 → TypeORM 自动 COMMIT
+      // ↑ 任何步骤抛异常 → TypeORM 自动 ROLLBACK
+    });
+  }
+
+  /**
+   * 创建订单 — 写法二：QueryRunner 手动控制（对比学习用）
+   *
+   * 与写法一功能相同，但手动管理 BEGIN / COMMIT / ROLLBACK
+   * 适合需要在事务中执行非数据库操作（如发消息队列）的场景
+   */
+  async createWithQueryRunner(dto: CreateOrderDto): Promise<Order> {
+    // 1. 从连接池取出一个专用连接
+    const queryRunner = this.dataSource.createQueryRunner();
+    await queryRunner.connect();
+
+    // 2. 开启事务（相当于 BEGIN）
+    await queryRunner.startTransaction();
+
+    try {
+      // 3. 业务操作
+      const product = await queryRunner.manager.findOne(Product, {
+        where: { id: dto.productId },
+      });
+      if (!product) {
+        throw new NotFoundException(`Product #${dto.productId} not found`);
+      }
+
+      if (product.stock < dto.quantity) {
+        throw new BadRequestException(
+          `库存不足：商品 "${product.name}" 当前库存 ${product.stock}，需要 ${dto.quantity}`,
+        );
+      }
+
+      await queryRunner.manager.save(Product, {
+        ...product,
+        stock: product.stock - dto.quantity,
+      });
+
+      const order = queryRunner.manager.create(Order, {
+        userId: dto.userId,
+        productId: dto.productId,
+        quantity: dto.quantity,
+        description: dto.description,
+        amount: Number(product.price) * dto.quantity,
+      });
+      const saved = await queryRunner.manager.save(Order, order);
+
+      // 4. 提交（相当于 COMMIT）
+      await queryRunner.commitTransaction();
+      return saved;
+    } catch (err) {
+      // 5. 出错时回滚（相当于 ROLLBACK）
+      await queryRunner.rollbackTransaction();
+      throw err;
+    } finally {
+      // 6. 无论成功失败，释放连接回连接池（必须执行！否则连接池耗尽）
+      await queryRunner.release();
     }
-
-    // 3. 扣减库存（⚠️ 无事务：若第 4 步抛异常，此处已执行的扣减不会回滚）
-    await this.productsService.update(product.id, {
-      stock: product.stock - dto.quantity,
-    });
-
-    // 4. 创建订单
-    const order = this.ordersRepo.create({
-      userId: dto.userId,
-      productId: dto.productId,
-      quantity: dto.quantity,
-      description: dto.description,
-      amount: Number(product.price) * dto.quantity,
-    });
-    return this.ordersRepo.save(order);
   }
 
   async update(id: string, dto: UpdateOrderDto): Promise<Order> {

@@ -3,12 +3,13 @@ import { TypeOrmModule } from '@nestjs/typeorm';
 import { Order } from './entities/order.entity';
 import { OrdersController } from './orders.controller';
 import { OrdersService } from './orders.service';
-import { ProductsModule } from '../products/products.module';
 
 @Module({
   imports: [
     TypeOrmModule.forFeature([Order]),
-    ProductsModule, // 注入 ProductsService，用于下单时查询和扣减库存
+    // 注意：阶段一开始，OrdersService.create() 改用 dataSource.transaction()
+    // 事务内通过 manager 直接操作 Product，不再依赖 ProductsService
+    // 因此移除了对 ProductsModule 的依赖
   ],
   controllers: [OrdersController],
   providers: [OrdersService],
