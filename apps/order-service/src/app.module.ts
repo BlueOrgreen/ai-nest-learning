@@ -2,6 +2,7 @@ import { Module } from '@nestjs/common';
 import { ConfigModule } from '@nestjs/config';
 import { DatabaseModule, DatabaseHealthModule } from '@app/database';
 import { OrdersModule } from './orders/orders.module';
+import { ProductsModule } from './products/products.module';
 import { HealthController } from './health/health.controller';
 
 @Module({
@@ -23,6 +24,7 @@ import { HealthController } from './health/health.controller';
 
     // ④ 业务模块
     OrdersModule,
+    ProductsModule,
   ],
   controllers: [HealthController],
 })

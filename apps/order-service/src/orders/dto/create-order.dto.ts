@@ -1,6 +1,6 @@
 import {
+  IsInt,
   IsNotEmpty,
-  IsNumber,
   IsPositive,
   IsString,
   IsUUID,
@@ -11,11 +11,17 @@ export class CreateOrderDto {
   @IsNotEmpty()
   userId: string;
 
+  /** 购买的商品 ID */
+  @IsUUID()
+  @IsNotEmpty()
+  productId: string;
+
+  /** 购买数量，必须为正整数 */
+  @IsInt()
+  @IsPositive()
+  quantity: number;
+
   @IsString()
   @IsNotEmpty()
   description: string;
-
-  @IsNumber({ maxDecimalPlaces: 2 })
-  @IsPositive()
-  amount: number;
 }
