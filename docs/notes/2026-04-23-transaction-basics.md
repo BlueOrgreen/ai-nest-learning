@@ -243,5 +243,5 @@ MySQL 不支持真正的嵌套事务。TypeORM 默认会复用外层事务（SAV
 
 | 字段 | 内容 |
 |------|------|
-| Commit | 待填写 |
+| Commit | `1db284b` |
 | Message | `feat(order-service): 阶段一 — 事务包裹创建订单` |
