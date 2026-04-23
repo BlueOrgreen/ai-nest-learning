@@ -63,5 +63,6 @@ apps/order-service/src/products/
 
 | 字段 | 内容 |
 |------|------|
-| Commit | 待填写 |
+| Commit | `8761af0` |
+| 时间 | 2026-04-23 |
 | Message | `feat(order-service): 新增 Product 实体，改造 Order 关联 productId，为事务学习准备业务场景` |

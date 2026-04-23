@@ -40,7 +40,7 @@
 
 | 阶段 | 新增/修改文件 | Commit |
 |------|-------------|--------|
-| 阶段零 | Product 实体、ProductsModule、order 关联改造 | 待填写 |
+| 阶段零 | Product 实体、ProductsModule、order 关联改造 | `8761af0` |
 | 阶段一 | orders.service.ts（事务改造） | 待填写 |
 | 阶段二 | 演示脚本 | 待填写 |
 | 阶段三 | 演示脚本 | 待填写 |
