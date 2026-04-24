@@ -77,9 +77,38 @@ export class OrdersController {
     return this.ordersService.demoPhantomRead(userId);
   }
 
+  /**
+   * 查看当前 MySQL 会话的隔离级别
+   * GET /orders/demo/isolation-level
+   */
+  @Get('demo/isolation-level')
+  getSessionIsolationLevel() {
+    return this.ordersService.getSessionIsolationLevel();
+  }
+
+  /**
+   * 在指定隔离级别下读取商品库存，观察快照行为（接口会等待 2 秒）
+   * GET /orders/demo/isolation-level/read?productId=xxx&level=REPEATABLE_READ
+   *
+   * level 可选值：READ_UNCOMMITTED / READ_COMMITTED / REPEATABLE_READ / SERIALIZABLE
+   */
+  @Get('demo/isolation-level/read')
+  readWithIsolationLevel(
+    @Query('productId') productId: string,
+    @Query('level') level: string,
+  ) {
+    // 把 URL 参数的下划线格式转成 SQL 标准的空格格式
+    const normalized = (level ?? 'REPEATABLE READ').replace(/_/g, ' ') as
+      | 'READ UNCOMMITTED'
+      | 'READ COMMITTED'
+      | 'REPEATABLE READ'
+      | 'SERIALIZABLE';
+    return this.ordersService.readWithIsolationLevel(productId, normalized);
+  }
+
   // ─────────────────────────────────────────────
 
-  @Get(':id')
+
   findOne(@Param('id') id: string) {
     return this.ordersService.findOne(id);
   }

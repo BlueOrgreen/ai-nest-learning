@@ -386,6 +386,105 @@ export class OrdersService {
   }
 
   // ─────────────────────────────────────────────
+  //  阶段三：隔离级别演示
+  // ─────────────────────────────────────────────
+
+  /**
+   * 查询当前 MySQL 会话的默认事务隔离级别
+   *
+   * MySQL 系统变量：@@transaction_isolation
+   * 默认值：REPEATABLE-READ
+   */
+  async getSessionIsolationLevel(): Promise<{
+    level: string;
+    description: string;
+  }> {
+    const result = await this.dataSource.query(
+      'SELECT @@transaction_isolation AS level',
+    );
+    const level: string = result[0]?.level ?? 'UNKNOWN';
+
+    const descriptions: Record<string, string> = {
+      'READ-UNCOMMITTED': '读未提交：可读取未提交数据，会产生脏读/不可重复读/幻读',
+      'READ-COMMITTED': '读已提交：只读已提交数据，解决脏读，但仍有不可重复读/幻读',
+      'REPEATABLE-READ': 'MySQL 默认：快照读保证同一事务内结果一致，间隙锁部分解决幻读',
+      SERIALIZABLE: '串行化：最高隔离，完全串行执行，无任何并发异常，但性能最低',
+    };
+
+    return {
+      level,
+      description: descriptions[level] ?? '未知隔离级别',
+    };
+  }
+
+  /**
+   * 在指定隔离级别下读取商品库存，展示快照行为
+   *
+   * 支持的 level 参数：
+   *   READ_UNCOMMITTED / READ_COMMITTED / REPEATABLE_READ / SERIALIZABLE
+   *
+   * 演示步骤（观察 REPEATABLE READ 与 READ COMMITTED 的区别）：
+   *   1. 先调用此接口（level=REPEATABLE_READ），记录返回的 stock
+   *   2. 在另一个窗口修改该商品的 stock（直接 PATCH 或 SQL）
+   *   3. 再次调用此接口：
+   *      - level=READ_COMMITTED  → 看到修改后的新值（不可重复读）
+   *      - level=REPEATABLE_READ → 仍看到旧值（快照隔离，不受影响）
+   */
+  async readWithIsolationLevel(
+    productId: string,
+    level: 'READ UNCOMMITTED' | 'READ COMMITTED' | 'REPEATABLE READ' | 'SERIALIZABLE',
+  ): Promise<{
+    isolationLevel: string;
+    productId: string;
+    stock: number;
+    snapshotNote: string;
+  }> {
+    const qr = this.dataSource.createQueryRunner();
+    await qr.connect();
+    await qr.startTransaction(level);
+
+    try {
+      const product = await qr.manager.findOne(Product, {
+        where: { id: productId },
+      });
+      if (!product) throw new NotFoundException(`Product #${productId} not found`);
+
+      // 等 2 秒：让外部有时间修改数据，观察当前隔离级别是否"隔离"了这次修改
+      await this.sleep(2000);
+
+      // 再读一次，观察同一事务内第二次读是否和第一次相同
+      const product2 = await qr.manager.findOne(Product, {
+        where: { id: productId },
+      });
+
+      await qr.commitTransaction();
+
+      const firstStock = product.stock;
+      const secondStock = product2?.stock ?? firstStock;
+      const isIsolated = firstStock === secondStock;
+
+      const snapshotNotes: Record<string, string> = {
+        'READ UNCOMMITTED': '可读未提交数据，两次读可能因对方未提交的修改而不同',
+        'READ COMMITTED': '每次读取最新已提交快照，两次读可能不同（不可重复读）',
+        'REPEATABLE READ': 'MVCC 快照隔离，同一事务内两次读结果一致（推荐）',
+        SERIALIZABLE: '完全串行，两次读绝对一致，但会阻塞其他写操作',
+      };
+
+      return {
+        isolationLevel: level,
+        productId,
+        stock: secondStock,
+        snapshotNote: `firstRead=${firstStock}, secondRead=${secondStock}. ${isIsolated ? '✅ 两次一致' : '⚠️ 两次不同（并发异常）'}. ${snapshotNotes[level]}`,
+      };
+    } catch (err) {
+      await qr.rollbackTransaction();
+      throw err;
+    } finally {
+      await qr.release();
+    }
+  }
+
+  // ─────────────────────────────────────────────
 
   async update(id: string, dto: UpdateOrderDto): Promise<Order> {
     const order = await this.findOne(id);
