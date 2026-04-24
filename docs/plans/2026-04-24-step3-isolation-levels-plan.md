@@ -52,6 +52,6 @@ GET /orders/demo/isolation-level/read?productId=xxx&level=READ_COMMITTED
 
 | 字段 | 内容 |
 |------|------|
-| Commit | 待填写 |
+| Commit | `dde7e70` |
 | 时间 | 2026-04-24 |
 | Message | `feat(order-service): 阶段三 — 新增隔离级别演示接口` |
