@@ -107,8 +107,47 @@ export class OrdersController {
   }
 
   // ─────────────────────────────────────────────
+  //  阶段四：锁机制演示接口
+  // ─────────────────────────────────────────────
 
+  /**
+   * 演示共享锁（持锁 2 秒）
+   * 并发调用两次：两个请求都能立刻获得锁（读读兼容）
+   * GET /orders/demo/lock/shared?productId=xxx
+   */
+  @Get('demo/lock/shared')
+  demoSharedLock(@Query('productId') productId: string) {
+    return this.ordersService.demoSharedLock(productId);
+  }
 
+  /**
+   * 演示排他锁（持锁 3 秒）
+   * 并发调用两次：第二个请求被阻塞，等第一个提交后才继续
+   * 观察 waitedMs：第二个请求会接近 3000ms
+   * GET /orders/demo/lock/exclusive?productId=xxx
+   */
+  @Get('demo/lock/exclusive')
+  demoExclusiveLock(@Query('productId') productId: string) {
+    return this.ordersService.demoExclusiveLock(productId);
+  }
+
+  /**
+   * 演示死锁
+   * 两个事务以相反顺序请求两个商品的排他锁，触发 MySQL 死锁检测
+   * POST /orders/demo/lock/deadlock
+   * body: { "productIdA": "uuid-a", "productIdB": "uuid-b" }
+   */
+  @Post('demo/lock/deadlock')
+  demoDeadlock(
+    @Body('productIdA') productIdA: string,
+    @Body('productIdB') productIdB: string,
+  ) {
+    return this.ordersService.demoDeadlock(productIdA, productIdB);
+  }
+
+  // ─────────────────────────────────────────────
+
+  @Get(':id')
   findOne(@Param('id') id: string) {
     return this.ordersService.findOne(id);
   }

@@ -485,6 +485,218 @@ export class OrdersService {
   }
 
   // ─────────────────────────────────────────────
+  //  阶段四：锁机制演示
+  // ─────────────────────────────────────────────
+
+  /**
+   * 【演示：共享锁 FOR SHARE】
+   *
+   * 共享锁允许多个事务同时读同一行，但阻止任何事务对该行加排他锁（写）。
+   *
+   * 演示：在共享锁下读取商品信息，持锁 2 秒后提交。
+   * 并发调用两次：两个请求都能立刻获得共享锁，互不阻塞（读读兼容）。
+   */
+  async demoSharedLock(productId: string): Promise<{
+    lockType: string;
+    productId: string;
+    stock: number;
+    heldForMs: number;
+    note: string;
+  }> {
+    const start = Date.now();
+    const qr = this.dataSource.createQueryRunner();
+    await qr.connect();
+    await qr.startTransaction();
+
+    try {
+      // FOR SHARE：共享锁，多个事务可同时持有
+      const product = await qr.manager
+        .createQueryBuilder(Product, 'p')
+        .where('p.id = :id', { id: productId })
+        .setLock('pessimistic_read') // LOCK IN SHARE MODE
+        .getOne();
+
+      if (!product) throw new NotFoundException(`Product #${productId} not found`);
+
+      this.logger.log(
+        `[SharedLock] 获得共享锁，stock=${product.stock}，持锁 2 秒...`,
+      );
+
+      // 持锁 2 秒，让你观察：另一个并发 FOR SHARE 请求是否会被阻塞
+      await this.sleep(2000);
+
+      await qr.commitTransaction();
+
+      return {
+        lockType: 'SHARED LOCK (FOR SHARE)',
+        productId,
+        stock: product.stock,
+        heldForMs: Date.now() - start,
+        note: '共享锁：并发的 FOR SHARE 请求不会被阻塞（读读兼容）；但 FOR UPDATE 请求会被阻塞（读写互斥）',
+      };
+    } catch (err) {
+      await qr.rollbackTransaction();
+      throw err;
+    } finally {
+      await qr.release();
+    }
+  }
+
+  /**
+   * 【演示：排他锁 FOR UPDATE】
+   *
+   * 排他锁：同一时间只有一个事务可以持有，其他事务的 FOR UPDATE / FOR SHARE 都要等待。
+   *
+   * 演示步骤：
+   *   1. 同时发起两次请求
+   *   2. 第一个请求获得排他锁，持锁 3 秒后提交
+   *   3. 第二个请求阻塞等待，直到第一个提交后才能继续
+   *   4. 观察两次请求的 heldForMs，第二个会明显更长
+   */
+  async demoExclusiveLock(productId: string): Promise<{
+    lockType: string;
+    productId: string;
+    stock: number;
+    waitedMs: number;
+    note: string;
+  }> {
+    const start = Date.now();
+    const qr = this.dataSource.createQueryRunner();
+    await qr.connect();
+    await qr.startTransaction();
+
+    try {
+      // FOR UPDATE：排他锁，同一时间只有一个事务能持有
+      const product = await qr.manager
+        .createQueryBuilder(Product, 'p')
+        .where('p.id = :id', { id: productId })
+        .setLock('pessimistic_write') // FOR UPDATE
+        .getOne();
+
+      if (!product) throw new NotFoundException(`Product #${productId} not found`);
+
+      const waitedMs = Date.now() - start; // 等锁花费的时间
+      this.logger.log(
+        `[ExclusiveLock] 获得排他锁（等待了 ${waitedMs}ms），stock=${product.stock}，持锁 3 秒...`,
+      );
+
+      // 持锁 3 秒，让第二个并发请求在等待
+      await this.sleep(3000);
+
+      await qr.commitTransaction();
+
+      return {
+        lockType: 'EXCLUSIVE LOCK (FOR UPDATE)',
+        productId,
+        stock: product.stock,
+        waitedMs,
+        note:
+          waitedMs > 500
+            ? `⏳ 等待了 ${waitedMs}ms 才获得锁（说明被前一个事务阻塞了）`
+            : `✅ 立刻获得锁（${waitedMs}ms），是第一个请求。排他锁已持有 3 秒，并发请求正在阻塞中`,
+      };
+    } catch (err) {
+      await qr.rollbackTransaction();
+      throw err;
+    } finally {
+      await qr.release();
+    }
+  }
+
+  /**
+   * 【演示：死锁】
+   *
+   * 制造死锁的经典场景：两个事务以相反顺序请求两行的排他锁。
+   *
+   * 本方法在同一进程内模拟两个并发事务：
+   *   事务 A：先锁 productIdA，sleep，再锁 productIdB
+   *   事务 B：先锁 productIdB，sleep，再锁 productIdA
+   *   ↑ 互相持有对方需要的锁 → 死锁
+   *
+   * MySQL 检测到死锁后，自动回滚代价更小的事务，
+   * 抛出 ER_LOCK_DEADLOCK 错误。
+   *
+   * 注意：两个 productId 必须是不同的真实商品 ID
+   */
+  async demoDeadlock(
+    productIdA: string,
+    productIdB: string,
+  ): Promise<{ result: string; winner: string; loser: string }> {
+    let winnerLabel = '';
+    let loserLabel = '';
+
+    // 启动事务 A 和事务 B，并发执行
+    const txA = this.dataSource.transaction(async (managerA) => {
+      // A 先锁 productIdA
+      await managerA
+        .createQueryBuilder(Product, 'p')
+        .where('p.id = :id', { id: productIdA })
+        .setLock('pessimistic_write')
+        .getOne();
+
+      this.logger.warn(`[Deadlock] 事务A 锁定了 productA，等待 300ms 后尝试锁 productB`);
+      await this.sleep(300); // 确保事务 B 已锁定 productIdB
+
+      // A 再锁 productIdB（此时 B 持有这个锁，A 等待）
+      await managerA
+        .createQueryBuilder(Product, 'p')
+        .where('p.id = :id', { id: productIdB })
+        .setLock('pessimistic_write')
+        .getOne();
+
+      winnerLabel = '事务A';
+      this.logger.log(`[Deadlock] 事务A 成功提交`);
+    });
+
+    const txB = this.dataSource.transaction(async (managerB) => {
+      await this.sleep(100); // 稍微延迟，确保 A 先锁 productIdA
+
+      // B 先锁 productIdB
+      await managerB
+        .createQueryBuilder(Product, 'p')
+        .where('p.id = :id', { id: productIdB })
+        .setLock('pessimistic_write')
+        .getOne();
+
+      this.logger.warn(`[Deadlock] 事务B 锁定了 productB，等待 200ms 后尝试锁 productA`);
+      await this.sleep(200); // 确保事务 A 已在等 productIdB
+
+      // B 再锁 productIdA（此时 A 持有这个锁，B 等待 → 死锁！）
+      await managerB
+        .createQueryBuilder(Product, 'p')
+        .where('p.id = :id', { id: productIdA })
+        .setLock('pessimistic_write')
+        .getOne();
+
+      winnerLabel = '事务B';
+      this.logger.log(`[Deadlock] 事务B 成功提交`);
+    });
+
+    // 并发执行两个事务，等待其中一个死锁回滚
+    const [resultA, resultB] = await Promise.allSettled([txA, txB]);
+
+    const aFailed = resultA.status === 'rejected';
+    const bFailed = resultB.status === 'rejected';
+
+    if (!aFailed && !bFailed) {
+      return { result: '⚠️ 未触发死锁（两个商品 ID 可能相同，或数据不存在）', winner: '', loser: '' };
+    }
+
+    loserLabel = aFailed ? '事务A（被 MySQL 选为回滚目标）' : '事务B（被 MySQL 选为回滚目标）';
+    const loserErr = aFailed
+      ? (resultA as PromiseRejectedResult).reason
+      : (resultB as PromiseRejectedResult).reason;
+
+    this.logger.error(`[Deadlock] 死锁回滚方：${loserLabel}，错误：${loserErr?.message}`);
+
+    return {
+      result: '✅ 死锁触发成功！MySQL 自动检测到循环等待，回滚了代价更小的事务',
+      winner: winnerLabel || '另一个事务（成功提交）',
+      loser: loserLabel,
+    };
+  }
+
+  // ─────────────────────────────────────────────
 
   async update(id: string, dto: UpdateOrderDto): Promise<Order> {
     const order = await this.findOne(id);
