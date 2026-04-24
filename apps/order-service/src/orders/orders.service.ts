@@ -149,6 +149,244 @@ export class OrdersService {
     }
   }
 
+  // ─────────────────────────────────────────────
+  //  阶段二：并发异常演示（仅用于学习，勿用于生产）
+  // ─────────────────────────────────────────────
+
+  /**
+   * 工具函数：等待指定毫秒数
+   * 用于在事务中途"暂停"，制造并发时间窗口
+   */
+  private sleep(ms: number): Promise<void> {
+    return new Promise((resolve) => setTimeout(resolve, ms));
+  }
+
+  /**
+   * 【演示：脏读】
+   *
+   * 隔离级别：READ UNCOMMITTED（最低，不阻止读未提交数据）
+   *
+   * 配合 simulateDirtyWrite() 使用：
+   *   1. 先调用 simulateDirtyWrite（它会修改数据但暂停 5 秒不提交）
+   *   2. 在 5 秒内调用 demoDirtyRead
+   *   3. demoDirtyRead 会读到"尚未提交的修改"（脏数据）
+   *   4. simulateDirtyWrite 最终 ROLLBACK，脏数据消失
+   *
+   * 观察：firstRead 的值是 simulateDirtyWrite 写入但未提交的值
+   */
+  async demoDirtyRead(productId: string): Promise<{
+    phenomenon: string;
+    isolationLevel: string;
+    firstRead: number;
+    note: string;
+  }> {
+    const qr = this.dataSource.createQueryRunner();
+    await qr.connect();
+    // READ UNCOMMITTED：允许读取其他事务未提交的数据
+    await qr.startTransaction('READ UNCOMMITTED');
+
+    try {
+      const product = await qr.manager.findOne(Product, {
+        where: { id: productId },
+      });
+      if (!product) throw new NotFoundException(`Product #${productId} not found`);
+
+      await qr.commitTransaction();
+      return {
+        phenomenon: '脏读 (Dirty Read)',
+        isolationLevel: 'READ UNCOMMITTED',
+        firstRead: product.stock,
+        note: '如果此时另一个事务修改了 stock 但未提交，这里会读到未提交的值',
+      };
+    } catch (err) {
+      await qr.rollbackTransaction();
+      throw err;
+    } finally {
+      await qr.release();
+    }
+  }
+
+  /**
+   * 【演示：制造脏写场景】
+   *
+   * 修改数据后暂停 5 秒，最终 ROLLBACK（模拟事务回滚）
+   * 在暂停期间，demoDirtyRead 若在 READ UNCOMMITTED 下读取，会读到这里写的值
+   */
+  async simulateDirtyWrite(
+    productId: string,
+    dirtyStock: number,
+  ): Promise<{ message: string }> {
+    const qr = this.dataSource.createQueryRunner();
+    await qr.connect();
+    await qr.startTransaction();
+
+    try {
+      const product = await qr.manager.findOne(Product, {
+        where: { id: productId },
+      });
+      if (!product) throw new NotFoundException(`Product #${productId} not found`);
+
+      const originalStock = product.stock;
+
+      // 写入脏数据（不提交）
+      await qr.manager.update(Product, productId, { stock: dirtyStock });
+      this.logger.warn(
+        `[DirtyWrite] stock 已被修改为 ${dirtyStock}（未提交），5秒后回滚`,
+      );
+
+      // 暂停 5 秒，给 demoDirtyRead 制造时间窗口
+      await this.sleep(5000);
+
+      // 回滚，模拟事务失败
+      await qr.rollbackTransaction();
+      this.logger.warn(
+        `[DirtyWrite] ROLLBACK 完成，stock 恢复为 ${originalStock}`,
+      );
+
+      return {
+        message: `已回滚。stock 从 ${dirtyStock} 恢复为 ${originalStock}。如果期间有人用 READ UNCOMMITTED 读取，他们看到的是 ${dirtyStock}（脏数据）`,
+      };
+    } catch (err) {
+      await qr.rollbackTransaction();
+      throw err;
+    } finally {
+      await qr.release();
+    }
+  }
+
+  /**
+   * 【演示：不可重复读】
+   *
+   * 隔离级别：READ COMMITTED
+   *
+   * 在同一事务内读两次同一行：
+   *   第一次读 → sleep 3 秒（等待外部修改并提交）→ 第二次读
+   *
+   * 如果两次之间有人修改了 stock 并 COMMIT，
+   * READ COMMITTED 下第二次读会看到新值（不可重复读）
+   *
+   * 操作步骤：
+   *   1. 调用此接口（它会等待 3 秒）
+   *   2. 3 秒内用 PATCH /orders/:id 或直接 SQL 修改 stock
+   *   3. 观察返回的 firstRead 和 secondRead 是否不同
+   */
+  async demoNonRepeatableRead(productId: string): Promise<{
+    phenomenon: string;
+    isolationLevel: string;
+    firstRead: number;
+    secondRead: number;
+    isDifferent: boolean;
+    note: string;
+  }> {
+    const qr = this.dataSource.createQueryRunner();
+    await qr.connect();
+    // READ COMMITTED：每次读取都看到最新已提交数据
+    await qr.startTransaction('READ COMMITTED');
+
+    try {
+      // 第一次读
+      const p1 = await qr.manager.findOne(Product, { where: { id: productId } });
+      if (!p1) throw new NotFoundException(`Product #${productId} not found`);
+      const firstRead = p1.stock;
+
+      this.logger.log(
+        `[NonRepeatableRead] 第一次读 stock=${firstRead}，等待 3 秒（请在此期间修改 stock）`,
+      );
+
+      // 等待期间，外部可以修改数据
+      await this.sleep(3000);
+
+      // 第二次读（READ COMMITTED 下会看到外部已提交的修改）
+      const p2 = await qr.manager.findOne(Product, { where: { id: productId } });
+      const secondRead = p2?.stock ?? firstRead;
+
+      await qr.commitTransaction();
+
+      const different = firstRead !== secondRead;
+      return {
+        phenomenon: '不可重复读 (Non-repeatable Read)',
+        isolationLevel: 'READ COMMITTED',
+        firstRead,
+        secondRead,
+        isDifferent: different,
+        note: different
+          ? '✅ 复现成功：同一事务内，两次读取结果不同'
+          : '⚠️ 未复现：等待期间没有其他事务修改数据',
+      };
+    } catch (err) {
+      await qr.rollbackTransaction();
+      throw err;
+    } finally {
+      await qr.release();
+    }
+  }
+
+  /**
+   * 【演示：幻读】
+   *
+   * 隔离级别：READ COMMITTED（没有间隙锁，无法阻止插入）
+   *
+   * 在同一事务内统计同一条件的行数两次：
+   *   第一次统计 → sleep 3 秒（等待外部插入新数据）→ 第二次统计
+   *
+   * 操作步骤：
+   *   1. 调用此接口（它会等待 3 秒）
+   *   2. 3 秒内调用 POST /orders 新增一条该用户的订单
+   *   3. 观察 firstCount 和 secondCount 是否不同
+   */
+  async demoPhantomRead(userId: string): Promise<{
+    phenomenon: string;
+    isolationLevel: string;
+    firstCount: number;
+    secondCount: number;
+    isDifferent: boolean;
+    note: string;
+  }> {
+    const qr = this.dataSource.createQueryRunner();
+    await qr.connect();
+    // READ COMMITTED：无间隙锁，其他事务可以在范围内插入新数据
+    await qr.startTransaction('READ COMMITTED');
+
+    try {
+      // 第一次统计
+      const firstCount = await qr.manager.count(Order, {
+        where: { userId },
+      });
+
+      this.logger.log(
+        `[PhantomRead] 第一次统计 userId=${userId} 订单数=${firstCount}，等待 3 秒`,
+      );
+
+      // 等待期间，外部可以插入新订单
+      await this.sleep(3000);
+
+      // 第二次统计（READ COMMITTED 下可能多出新插入的行）
+      const secondCount = await qr.manager.count(Order, {
+        where: { userId },
+      });
+
+      await qr.commitTransaction();
+
+      return {
+        phenomenon: '幻读 (Phantom Read)',
+        isolationLevel: 'READ COMMITTED',
+        firstCount,
+        secondCount,
+        isDifferent: firstCount !== secondCount,
+        note: firstCount !== secondCount
+          ? '✅ 复现成功：同一事务内，两次范围查询结果不同（出现了新行）'
+          : '⚠️ 未复现：等待期间没有其他事务插入新数据',
+      };
+    } catch (err) {
+      await qr.rollbackTransaction();
+      throw err;
+    } finally {
+      await qr.release();
+    }
+  }
+
+  // ─────────────────────────────────────────────
+
   async update(id: string, dto: UpdateOrderDto): Promise<Order> {
     const order = await this.findOne(id);
     Object.assign(order, dto);
