@@ -44,7 +44,7 @@
 | 阶段一 | orders.service.ts（事务改造） | `1db284b` |
 | 阶段二 | 并发异常演示接口（orders.service / controller） | `6a4cfa2` |
 | 阶段三 | 隔离级别演示接口（orders.service / controller） | `dde7e70` |
-| 阶段四 | 演示脚本 | 待填写 |
+| 阶段四 | 演示脚本 | `60a40f5` |
 | 阶段五 | Order 实体（@Version）、orders.service.ts | 待填写 |
 
 ---
