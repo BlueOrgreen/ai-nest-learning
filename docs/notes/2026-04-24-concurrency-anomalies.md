@@ -250,12 +250,12 @@ async demoPhantomRead(userId: string): Promise<{
 
 （详见阶段三笔记，这里先给结论）
 
-| 隔离级别 | 脏读 | 不可重复读 | 幻读 |
-|---------|------|----------|------|
-| READ UNCOMMITTED | ❌ 有 | ❌ 有 | ❌ 有 |
-| READ COMMITTED | ✅ 无 | ❌ 有 | ❌ 有 |
-| REPEATABLE READ（MySQL 默认）| ✅ 无 | ✅ 无 | ⚠️ 间隙锁部分解决 |
-| SERIALIZABLE | ✅ 无 | ✅ 无 | ✅ 无 |
+| 隔离级别　　　　　　　　　　　| 脏读 | 不可重复读 | 幻读　　　　　　 |
+| -------------------------------| ------| ------------| ------------------|
+| READ UNCOMMITTED　　　　　　　| ❌ 有 | ❌ 有　　　 | ❌ 有　　　　　　 |
+| READ COMMITTED　　　　　　　　| ✅ 无 | ❌ 有　　　 | ❌ 有　　　　　　 |
+| REPEATABLE READ（MySQL 默认） | ✅ 无 | ✅ 无　　　 | ⚠️ 间隙锁部分解决 |
+| SERIALIZABLE　　　　　　　　　| ✅ 无 | ✅ 无　　　 | ✅ 无　　　　　　 |
 
 ---
 
@@ -285,8 +285,8 @@ GET /orders/demo/phantom-read?userId=xxx
 
 ## 九、Git 提交记录
 
-| 字段 | 内容 |
-|------|------|
-| Commit | `6a4cfa2` |
-| 时间 | 2026-04-24 |
+| 字段　　| 内容　　　　　　　　　　　　　　　　　　　　　　　　　　　　　　　　　　　　 |
+| ---------| ------------------------------------------------------------------------------|
+| Commit　| `6a4cfa2`　　　　　　　　　　　　　　　　　　　　　　　　　　　　　　　　　　|
+| 时间　　| 2026-04-24　　　　　　　　　　　　　　　　　　　　　　　　　　　　　　　　　 |
 | Message | `feat(order-service): 阶段二 — 新增并发异常演示接口（脏读/不可重复读/幻读）` |
