@@ -42,7 +42,7 @@
 |------|-------------|--------|
 | 阶段零 | Product 实体、ProductsModule、order 关联改造 | `8761af0` |
 | 阶段一 | orders.service.ts（事务改造） | `1db284b` |
-| 阶段二 | 演示脚本 | 待填写 |
+| 阶段二 | 并发异常演示接口（orders.service / controller） | `6a4cfa2` |
 | 阶段三 | 演示脚本 | 待填写 |
 | 阶段四 | 演示脚本 | 待填写 |
 | 阶段五 | Order 实体（@Version）、orders.service.ts | 待填写 |

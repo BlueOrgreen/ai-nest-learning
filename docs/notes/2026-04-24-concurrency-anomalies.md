@@ -287,5 +287,6 @@ GET /orders/demo/phantom-read?userId=xxx
 
 | 字段 | 内容 |
 |------|------|
-| Commit | 待填写 |
+| Commit | `6a4cfa2` |
+| 时间 | 2026-04-24 |
 | Message | `feat(order-service): 阶段二 — 新增并发异常演示接口（脏读/不可重复读/幻读）` |
