@@ -1,5 +1,6 @@
 import { ValidationPipe } from '@nestjs/common';
 import { NestFactory } from '@nestjs/core';
+import { DocumentBuilder, SwaggerModule } from '@nestjs/swagger';
 import { AllExceptionsFilter, TransformInterceptor } from '@app/common';
 import { AppModule } from './app.module';
 
@@ -19,6 +20,22 @@ async function bootstrap() {
 
   // 统一成功响应格式：{ code: 0, data: T, message: "ok" }
   app.useGlobalInterceptors(new TransformInterceptor());
+
+  // ── Swagger ──────────────────────────────────────────
+  const config = new DocumentBuilder()
+    .setTitle('User Service API')
+    .setDescription('用户服务接口文档，包含用户 CRUD 及健康检查')
+    .setVersion('1.0')
+    .addBearerAuth(
+      { type: 'http', scheme: 'bearer', bearerFormat: 'JWT' },
+      'access-token',
+    )
+    .build();
+  const document = SwaggerModule.createDocument(app, config);
+  SwaggerModule.setup('docs', app, document);
+  // 访问：http://localhost:3001/docs
+  // JSON：http://localhost:3001/docs-json
+  // ─────────────────────────────────────────────────────
 
   await app.listen(process.env.PORT ?? 3001);
   console.log('User Service is running on port 3001');

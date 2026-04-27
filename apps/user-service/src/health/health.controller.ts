@@ -1,4 +1,5 @@
 import { Controller, Get } from '@nestjs/common';
+import { ApiOperation, ApiResponse, ApiTags } from '@nestjs/swagger';
 import {
   HealthCheck,
   HealthCheckService,
@@ -26,6 +27,7 @@ import {
  *   "details": { "database": { "status": "down" } }
  * }
  */
+@ApiTags('health')
 @Controller('health')
 export class HealthController {
   constructor(
@@ -33,6 +35,12 @@ export class HealthController {
     private readonly db: TypeOrmHealthIndicator,
   ) {}
 
+  @ApiOperation({
+    summary: '数据库健康检查',
+    description: '通过 @nestjs/terminus 执行 SELECT 1 探针，检测 DB 连通性。',
+  })
+  @ApiResponse({ status: 200, description: 'DB 正常，返回 { status: "ok" }' })
+  @ApiResponse({ status: 503, description: 'DB 异常，返回 { status: "error" }' })
   @Get()
   @HealthCheck()
   check() {
