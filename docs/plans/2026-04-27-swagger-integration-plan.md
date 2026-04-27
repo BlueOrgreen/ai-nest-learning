@@ -782,6 +782,9 @@ DTO 属性级
 
 | 字段 | 内容 |
 |------|------|
-| Commit | 待填写 |
+| Commit（docs 计划） | `6c159ab` → `871bc8c` → `16fa6b1` |
+| Commit（chore 安装） | `6d46e8f` |
+| Commit（order-service） | `3369203` |
+| Commit（user-service） | `4dd1a15` |
+| Commit（gateway） | `fc50dd3` |
 | 时间 | 2026-04-27 |
-| Message | `docs: 新增 Swagger 接入执行计划` |

@@ -61,11 +61,11 @@ SELECT * FROM products WHERE id = 1 FOR UPDATE;
 
 ### 2.3 锁兼容矩阵
 
-| | 无锁读 | 共享锁（FOR SHARE）| 排他锁（FOR UPDATE）|
-|--|:------:|:-----------------:|:------------------:|
-| **无锁读** | ✅ | ✅ | ✅ |
-| **共享锁** | ✅ | ✅ | ❌ 阻塞 |
-| **排他锁** | ✅（快照读）| ❌ 阻塞 | ❌ 阻塞 |
+| 　　　　　 | 无锁读　　　| 共享锁（FOR SHARE） | 排他锁（FOR UPDATE） |
+| ------------| :-----------:| :-------------------:| :--------------------:|
+| **无锁读** | ✅　　　　　 | ✅　　　　　　　　　 | ✅　　　　　　　　　　|
+| **共享锁** | ✅　　　　　 | ✅　　　　　　　　　 | ❌ 阻塞　　　　　　　 |
+| **排他锁** | ✅（快照读） | ❌ 阻塞　　　　　　　| ❌ 阻塞　　　　　　　 |
 
 ---
 
@@ -91,13 +91,13 @@ const product = await manager
 
 ### 3.2 TypeORM 锁类型对照表
 
-| TypeORM 参数 | SQL | 说明 |
-|-------------|-----|------|
-| `pessimistic_read` | `LOCK IN SHARE MODE` | 共享锁 |
-| `pessimistic_write` | `FOR UPDATE` | 排他锁（最常用） |
-| `optimistic` | — | 乐观锁（用版本号，阶段五讲） |
-| `pessimistic_partial_write` | `FOR UPDATE SKIP LOCKED` | 跳过已锁行（队列处理场景） |
-| `pessimistic_write_or_fail` | `FOR UPDATE NOWAIT` | 加锁失败立即报错（不等待） |
+| TypeORM 参数　　　　　　　　| SQL                      | 说明　　　　　　　　　　　　 |
+| -----------------------------| --------------------------| ------------------------------|
+| `pessimistic_read`　　　　　| `LOCK IN SHARE MODE`     | 共享锁　　　　　　　　　　　 |
+| `pessimistic_write`　　　　 | `FOR UPDATE`             | 排他锁（最常用）　　　　　　 |
+| `optimistic`　　　　　　　　| —                        | 乐观锁（用版本号，阶段五讲） |
+| `pessimistic_partial_write` | `FOR UPDATE SKIP LOCKED` | 跳过已锁行（队列处理场景）　 |
+| `pessimistic_write_or_fail` | `FOR UPDATE NOWAIT`      | 加锁失败立即报错（不等待）　 |
 
 ---
 
