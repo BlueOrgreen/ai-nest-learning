@@ -3,6 +3,8 @@
 > 日期：2026-04-27
 > 涉及服务：`order-service`（主力）、`user-service`（用户 CRUD）、`gateway`（简化）
 > 访问地址：`http://localhost:3002/docs`（订单服务）、`http://localhost:3001/docs`（用户服务）、`http://localhost:3010/docs`（网关）
+>
+> OpenAPI JSON：`http://localhost:3002/docs-json`（订单服务）、`http://localhost:3001/docs-json`（用户服务）、`http://localhost:3010/docs-json`（网关）
 
 ---
 
@@ -23,11 +25,11 @@
 Gateway 的代理路由是 `@All('api/orders/{*path}')` 通配符，Swagger 无法自动扫描真实参数结构。
 Order Service 和 User Service 才是路由和 DTO 的真实宿主，Swagger 在这里能 100% 自动推断。
 
-| 位置 | 说明 | 文档质量 |
-|------|------|---------|
-| Order Service (3002) | 真实路由宿主，DTO 在此 | 完整，自动推断 |
-| User Service (3001) | 用户 CRUD 路由宿主，DTO 在此 | 完整，自动推断 |
-| Gateway (3010) | 仅文档化自身两个路由，其余标注"代理至下游" | 简化，引导至 3001/docs、3002/docs |
+| 位置 | Swagger UI | OpenAPI JSON | 文档质量 |
+|------|-----------|-------------|---------|
+| Order Service (3002) | http://localhost:3002/docs | http://localhost:3002/docs-json | 完整，自动推断 |
+| User Service (3001) | http://localhost:3001/docs | http://localhost:3001/docs-json | 完整，自动推断 |
+| Gateway (3010) | http://localhost:3010/docs | http://localhost:3010/docs-json | 简化，引导至 3001/docs、3002/docs |
 
 ---
 
