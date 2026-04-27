@@ -565,7 +565,220 @@ pnpm start:gateway
 
 ---
 
-## 七、Git 提交记录
+## 七、Swagger 装饰器速查
+
+本节解释本项目中用到的全部 `@nestjs/swagger` 装饰器，按使用位置分类。
+
+---
+
+### 7.1 DocumentBuilder — 构建文档元信息
+
+`DocumentBuilder` 是链式构建器，用于配置整个服务的 Swagger 文档元信息，最终调用 `.build()` 产出配置对象。
+
+| 方法 | 说明 | 本项目使用示例 |
+|------|------|--------------|
+| `.setTitle(title)` | 文档标题，显示在 Swagger UI 顶部 | `'Order Service API'` |
+| `.setDescription(desc)` | 文档描述，支持 Markdown，显示在标题下方 | 含代理说明和链接的多行文本 |
+| `.setVersion(ver)` | API 版本号，显示在标题旁 | `'1.0'` |
+| `.addBearerAuth(options, name)` | 注册一种安全方案（Bearer JWT），name 作为方案标识符，供 `@ApiBearerAuth(name)` 引用 | `addBearerAuth({ type: 'http', scheme: 'bearer', bearerFormat: 'JWT' }, 'access-token')` |
+| `.build()` | 终止链式调用，返回 `OpenAPIObject` 配置对象 | 必须调用，传入 `SwaggerModule.createDocument()` |
+
+---
+
+### 7.2 SwaggerModule — 注册文档到 NestJS 应用
+
+| 方法 | 签名 | 说明 |
+|------|------|------|
+| `SwaggerModule.createDocument(app, config)` | `(app, OpenAPIObject) => OpenAPIObject` | 扫描整个应用所有 Controller / DTO 的装饰器，生成完整的 OpenAPI JSON 规范 |
+| `SwaggerModule.setup(path, app, document)` | `(string, app, OpenAPIObject) => void` | 在指定路径挂载 Swagger UI（`/docs`）和 JSON 端点（`/docs-json`） |
+
+调用后自动提供两个端点：
+- `GET /docs` → Swagger UI 页面
+- `GET /docs-json` → 原始 OpenAPI JSON（可供 Postman / openapi-generator 消费）
+
+---
+
+### 7.3 Controller 类级别装饰器
+
+这些装饰器加在 `@Controller()` 类上，对该 Controller 下所有路由生效。
+
+| 装饰器 | 说明 | 本项目用法 |
+|--------|------|----------|
+| `@ApiTags('tag名')` | 将该 Controller 下所有路由归到同一个分组标签，Swagger UI 中折叠显示 | `@ApiTags('orders')`、`@ApiTags('users')`、`@ApiTags('auth')` |
+| `@ApiBearerAuth('name')` | 标记该 Controller 下所有路由需要 Bearer Token 认证，`name` 必须与 `addBearerAuth()` 的第二个参数一致 | `@ApiBearerAuth('access-token')` |
+
+---
+
+### 7.4 路由级别装饰器
+
+这些装饰器加在具体的方法上，描述单个接口。
+
+#### `@ApiOperation`
+
+描述接口的基本信息，显示在折叠面板的标题和展开后的说明区。
+
+```typescript
+@ApiOperation({
+  summary: '一句话概括（显示在折叠面板标题）',
+  description: '详细说明，支持 Markdown，显示在展开后的 Description 区域',
+})
+```
+
+| 字段 | 类型 | 说明 |
+|------|------|------|
+| `summary` | `string` | 简短摘要（必填，显示在列表视图） |
+| `description` | `string` | 详细描述，可以是多行 Markdown |
+| `deprecated` | `boolean` | 设为 `true` 则接口显示删除线，标记为废弃 |
+
+---
+
+#### `@ApiParam`
+
+描述路由路径中的动态参数（`:id`、`:userId` 等）。
+
+```typescript
+@ApiParam({
+  name: 'id',               // 必须与路由中的参数名完全一致
+  description: '用户 UUID',
+  example: 'uuid-user-xxx',
+  required: true,           // 路径参数默认都是 required
+})
+```
+
+---
+
+#### `@ApiQuery`
+
+描述 URL Query String 参数（`?productId=xxx`）。
+
+```typescript
+@ApiQuery({
+  name: 'level',
+  required: false,          // 可选参数
+  enum: ['READ_UNCOMMITTED', 'READ_COMMITTED', 'REPEATABLE_READ', 'SERIALIZABLE'],
+  example: 'REPEATABLE_READ',
+  description: '事务隔离级别',
+})
+```
+
+| 字段 | 说明 |
+|------|------|
+| `required` | `false` 表示非必填，Swagger UI 中该参数旁显示"optional" |
+| `enum` | 传入字符串数组，UI 中渲染为下拉选择框 |
+| `example` | 预填默认值，方便调试 |
+
+---
+
+#### `@ApiBody`
+
+描述请求体（`POST`、`PATCH`、`PUT` 接口使用）。有两种写法：
+
+**写法一：引用 DTO 类（推荐，自动读取 `@ApiProperty` 信息）**
+
+```typescript
+@ApiBody({ type: CreateOrderDto })
+```
+
+**写法二：内联 schema（DTO 在其他服务时、或临时演示接口）**
+
+```typescript
+@ApiBody({
+  schema: {
+    example: { productId: 'uuid-xxx', dirtyStock: 0 },
+  },
+})
+```
+
+---
+
+#### `@ApiResponse`
+
+描述接口可能返回的 HTTP 状态码和含义。
+
+```typescript
+@ApiResponse({ status: 200, description: '操作成功' })
+@ApiResponse({ status: 201, description: '创建成功，返回新建资源' })
+@ApiResponse({ status: 204, description: '删除成功，无响应体' })
+@ApiResponse({ status: 400, description: '参数校验失败 / 库存不足' })
+@ApiResponse({ status: 401, description: '未登录或 Token 无效' })
+@ApiResponse({ status: 404, description: '资源不存在' })
+@ApiResponse({ status: 409, description: '冲突（如 Email 重复）' })
+@ApiResponse({ status: 429, description: '请求过于频繁（限流）' })
+@ApiResponse({ status: 503, description: '服务不可用（DB 宕机）' })
+```
+
+> **注意**：`status: 204` 接口在 Swagger UI 中点击"Try it out"时不会显示响应体，这是 HTTP 规范预期行为，非 bug。
+
+---
+
+### 7.5 DTO 字段级别装饰器
+
+`@ApiProperty` 系列装饰器加在 DTO 类的属性上，让 Swagger 能自动推断请求体 / 响应体的 Schema。
+
+**若不加这些装饰器，DTO 在 Swagger UI 中显示为空对象 `{}`。**
+
+#### `@ApiProperty`（必填字段）
+
+```typescript
+@ApiProperty({
+  description: '字段说明',      // 显示在 Schema 描述旁
+  example: 'uuid-xxx',          // 预填示例值，点击"Try it out"时自动填入
+  type: String,                 // 显式指定类型（一般可省略，TS 自动推断）
+  enum: ['user', 'admin'],      // 枚举类型，UI 中渲染为下拉
+  default: 'user',              // 默认值说明
+  minimum: 1,                   // 数值类型的最小值约束（仅文档说明，不做校验）
+  maximum: 9999,                // 数值类型的最大值约束
+})
+```
+
+#### `@ApiPropertyOptional`（可选字段）
+
+等价于 `@ApiProperty({ required: false })`，语义更清晰，用于 `UpdateDto` 中所有可选字段。
+
+```typescript
+@ApiPropertyOptional({ example: '修改备注', description: '订单备注' })
+description?: string;
+```
+
+---
+
+### 7.6 装饰器作用域汇总
+
+```
+应用级
+└── DocumentBuilder + SwaggerModule.setup()   ← main.ts，全局生效
+
+Controller 类级
+├── @ApiTags('tag')                            ← 路由分组
+└── @ApiBearerAuth('name')                    ← 整个 Controller 需要认证
+
+路由方法级
+├── @ApiOperation({ summary, description })   ← 接口描述
+├── @ApiParam({ name, description, example }) ← 路径参数
+├── @ApiQuery({ name, required, enum })       ← Query 参数
+├── @ApiBody({ type | schema })               ← 请求体
+└── @ApiResponse({ status, description })     ← 响应说明（可多个）
+
+DTO 属性级
+├── @ApiProperty(options)                     ← 必填字段
+└── @ApiPropertyOptional(options)             ← 可选字段（required: false）
+```
+
+---
+
+### 7.7 常见陷阱
+
+| 陷阱 | 原因 | 解决方式 |
+|------|------|---------|
+| DTO 在文档中显示为 `{}` | DTO 属性没有加 `@ApiProperty` | 给每个字段加 `@ApiProperty` 或 `@ApiPropertyOptional` |
+| `@ApiBearerAuth()` 不生效 | `name` 与 `addBearerAuth()` 的第二个参数不一致 | 保持两处 `name` 相同，如 `'access-token'` |
+| 枚举字段没有下拉选项 | 只用 TS 类型，没有传 `enum` 给 `@ApiProperty` | 在 `@ApiProperty({ enum: ['user', 'admin'] })` 显式传入 |
+| 通配路由在 Swagger 显示乱码 | Express 通配符语法 `{*path}` 不是合法 OpenAPI 路径 | 手动加 `@ApiOperation` 覆盖，路由功能不受影响 |
+| `swagger-ui-express` 500 错误 | peer dependency 未安装 | `pnpm add swagger-ui-express` |
+
+---
+
+## 八、Git 提交记录
 
 | 字段 | 内容 |
 |------|------|
