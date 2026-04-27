@@ -1,8 +1,8 @@
 # Swagger 接入执行计划
 
 > 日期：2026-04-27
-> 涉及服务：`order-service`（主力）、`gateway`（简化）
-> 访问地址：`http://localhost:3002/docs`（订单服务）、`http://localhost:3010/docs`（网关）
+> 涉及服务：`order-service`（主力）、`user-service`（用户 CRUD）、`gateway`（简化）
+> 访问地址：`http://localhost:3002/docs`（订单服务）、`http://localhost:3001/docs`（用户服务）、`http://localhost:3010/docs`（网关）
 
 ---
 
@@ -11,7 +11,8 @@
 为这套 NestJS monorepo 接入 `@nestjs/swagger`，实现：
 
 1. Order Service（3002）完整文档：所有路由、Query 参数、请求体、响应结构均可在 Swagger UI 中直接调试
-2. Gateway（3010）简化文档：文档化自身直接处理的路由（`GET /`、`POST /auth/login`），代理路由注明下游地址
+2. User Service（3001）完整文档：用户 CRUD 路由、DTO 字段、响应结构完整文档化
+3. Gateway（3010）简化文档：文档化自身直接处理的路由（`GET /`、`POST /auth/login`），代理路由注明下游地址
 
 ---
 
@@ -20,27 +21,33 @@
 ### 为什么分两处挂，而不是只挂 Gateway？
 
 Gateway 的代理路由是 `@All('api/orders/{*path}')` 通配符，Swagger 无法自动扫描真实参数结构。
-Order Service 才是路由和 DTO 的真实宿主，Swagger 在这里能 100% 自动推断。
+Order Service 和 User Service 才是路由和 DTO 的真实宿主，Swagger 在这里能 100% 自动推断。
 
 | 位置 | 说明 | 文档质量 |
 |------|------|---------|
 | Order Service (3002) | 真实路由宿主，DTO 在此 | 完整，自动推断 |
-| Gateway (3010) | 仅文档化自身两个路由，其余标注"代理至下游" | 简化，引导至 3002/docs |
+| User Service (3001) | 用户 CRUD 路由宿主，DTO 在此 | 完整，自动推断 |
+| Gateway (3010) | 仅文档化自身两个路由，其余标注"代理至下游" | 简化，引导至 3001/docs、3002/docs |
 
 ---
 
 ## 三、文件变更清单
 
-| 文件 | 变更类型 | 说明 |
-|------|---------|------|
-| `apps/order-service/src/main.ts` | 修改 | 初始化 SwaggerModule |
-| `apps/order-service/src/orders/dto/create-order.dto.ts` | 修改 | 字段加 `@ApiProperty` |
-| `apps/order-service/src/orders/dto/update-order.dto.ts` | 修改 | 字段加 `@ApiPropertyOptional` |
-| `apps/order-service/src/orders/orders.controller.ts` | 修改 | 路由加 `@ApiOperation`、`@ApiQuery`、`@ApiBody`、`@ApiResponse` |
-| `apps/gateway/src/main.ts` | 修改 | 初始化 SwaggerModule（简化版） |
-| `apps/gateway/src/app.controller.ts` | 修改 | 健康检查路由加装饰器 |
-| `apps/gateway/src/auth/auth.controller.ts` | 修改 | 登录路由加装饰器 |
-| `apps/gateway/src/proxy/proxy.controller.ts` | 修改 | 代理路由加 `@ApiOperation` 说明 |
+| 文件　　　　　　　　　　　　　　　　　　　　　　　　　　| 变更类型 | 说明　　　　　　　　　　　　　　　　　　　　　　　　　　　　　　|
+| ---------------------------------------------------------| ----------| -----------------------------------------------------------------|
+| `apps/order-service/src/main.ts`　　　　　　　　　　　　| 修改　　 | 初始化 SwaggerModule　　　　　　　　　　　　　　　　　　　　　　|
+| `apps/order-service/src/orders/dto/create-order.dto.ts` | 修改　　 | 字段加 `@ApiProperty`　　　　　　　　　　　　　　　　　　　　　 |
+| `apps/order-service/src/orders/dto/update-order.dto.ts` | 修改　　 | 字段加 `@ApiPropertyOptional`　　　　　　　　　　　　　　　　　 |
+| `apps/order-service/src/orders/orders.controller.ts`　　| 修改　　 | 路由加 `@ApiOperation`、`@ApiQuery`、`@ApiBody`、`@ApiResponse` |
+| `apps/user-service/src/main.ts`　　　　　　　　　　　　 | 修改　　 | 初始化 SwaggerModule　　　　　　　　　　　　　　　　　　　　　　|
+| `apps/user-service/src/users/dto/create-user.dto.ts`　　| 修改　　 | 字段加 `@ApiProperty`　　　　　　　　　　　　　　　　　　　　　 |
+| `apps/user-service/src/users/dto/update-user.dto.ts`　　| 修改　　 | 字段加 `@ApiPropertyOptional`　　　　　　　　　　　　　　　　　 |
+| `apps/user-service/src/users/users.controller.ts`　　　 | 修改　　 | 路由加 `@ApiOperation`、`@ApiParam`、`@ApiBody`、`@ApiResponse` |
+| `apps/user-service/src/health/health.controller.ts`　　 | 修改　　 | 健康检查路由加 `@ApiOperation`　　　　　　　　　　　　　　　　　|
+| `apps/gateway/src/main.ts`　　　　　　　　　　　　　　　| 修改　　 | 初始化 SwaggerModule（简化版）　　　　　　　　　　　　　　　　　|
+| `apps/gateway/src/app.controller.ts`　　　　　　　　　　| 修改　　 | 健康检查路由加装饰器　　　　　　　　　　　　　　　　　　　　　　|
+| `apps/gateway/src/auth/auth.controller.ts`　　　　　　　| 修改　　 | 登录路由加装饰器　　　　　　　　　　　　　　　　　　　　　　　　|
+| `apps/gateway/src/proxy/proxy.controller.ts`　　　　　　| 修改　　 | 代理路由加 `@ApiOperation` 说明　　　　　　　　　　　　　　　　 |
 
 ---
 
@@ -271,7 +278,175 @@ pnpm start:order
 
 ---
 
-### Step 6：Gateway — 初始化简化 Swagger
+### Step 6：User Service — 初始化 Swagger
+
+修改 `apps/user-service/src/main.ts`，在 `app.listen()` 前插入：
+
+```typescript
+import { SwaggerModule, DocumentBuilder } from '@nestjs/swagger';
+
+const config = new DocumentBuilder()
+  .setTitle('User Service API')
+  .setDescription('用户服务接口文档，包含用户 CRUD 及健康检查')
+  .setVersion('1.0')
+  .addBearerAuth(
+    { type: 'http', scheme: 'bearer', bearerFormat: 'JWT' },
+    'access-token',
+  )
+  .build();
+
+const document = SwaggerModule.createDocument(app, config);
+SwaggerModule.setup('docs', app, document);
+// 访问：http://localhost:3001/docs
+// JSON：http://localhost:3001/docs-json
+```
+
+---
+
+### Step 7：给 User Service DTO 添加 `@ApiProperty`
+
+#### `create-user.dto.ts`
+
+```typescript
+import { ApiProperty } from '@nestjs/swagger';
+import { IsEmail, IsEnum, IsNotEmpty, IsString } from 'class-validator';
+
+export class CreateUserDto {
+  @ApiProperty({ example: '张三', description: '用户姓名' })
+  @IsString()
+  @IsNotEmpty()
+  name: string;
+
+  @ApiProperty({ example: 'zhangsan@example.com', description: '邮箱（唯一）' })
+  @IsEmail()
+  email: string;
+
+  @ApiProperty({
+    example: 'user',
+    enum: ['user', 'admin'],
+    description: '用户角色，默认 user',
+    default: 'user',
+  })
+  @IsEnum(['user', 'admin'])
+  role: 'user' | 'admin' = 'user';
+}
+```
+
+#### `update-user.dto.ts`
+
+```typescript
+import { ApiPropertyOptional } from '@nestjs/swagger';
+import { IsEmail, IsEnum, IsOptional, IsString } from 'class-validator';
+
+export class UpdateUserDto {
+  @ApiPropertyOptional({ example: '李四', description: '用户姓名' })
+  @IsString()
+  @IsOptional()
+  name?: string;
+
+  @ApiPropertyOptional({ example: 'lisi@example.com', description: '邮箱' })
+  @IsEmail()
+  @IsOptional()
+  email?: string;
+
+  @ApiPropertyOptional({
+    example: 'admin',
+    enum: ['user', 'admin'],
+    description: '用户角色',
+  })
+  @IsEnum(['user', 'admin'])
+  @IsOptional()
+  role?: 'user' | 'admin';
+}
+```
+
+---
+
+### Step 8：给 User Service Controller 添加装饰器
+
+#### `users.controller.ts`
+
+顶部引入：
+
+```typescript
+import {
+  ApiTags, ApiBearerAuth, ApiOperation,
+  ApiParam, ApiBody, ApiResponse,
+} from '@nestjs/swagger';
+```
+
+类级别：
+
+```typescript
+@ApiTags('users')
+@ApiBearerAuth('access-token')
+@Controller('users')
+export class UsersController { ... }
+```
+
+各路由装饰器：
+
+```typescript
+// GET /users
+@ApiOperation({ summary: '获取所有用户（按创建时间倒序）' })
+@ApiResponse({ status: 200, description: '用户列表' })
+
+// GET /users/:id
+@ApiOperation({ summary: '根据 UUID 获取单个用户' })
+@ApiParam({ name: 'id', example: 'uuid-user-xxx', description: '用户 UUID' })
+@ApiResponse({ status: 200, description: '用户信息' })
+@ApiResponse({ status: 404, description: 'User not found' })
+
+// POST /users
+@ApiOperation({ summary: '创建新用户' })
+@ApiBody({ type: CreateUserDto })
+@ApiResponse({ status: 201, description: '创建成功，返回用户对象' })
+@ApiResponse({ status: 409, description: 'Email 已存在' })
+
+// PATCH /users/:id
+@ApiOperation({ summary: '部分更新用户信息' })
+@ApiParam({ name: 'id', example: 'uuid-user-xxx' })
+@ApiBody({ type: UpdateUserDto })
+@ApiResponse({ status: 200, description: '更新后的用户对象' })
+@ApiResponse({ status: 404, description: 'User not found' })
+
+// DELETE /users/:id
+@ApiOperation({ summary: '删除用户' })
+@ApiParam({ name: 'id', example: 'uuid-user-xxx' })
+@ApiResponse({ status: 204, description: '删除成功，无响应体' })
+@ApiResponse({ status: 404, description: 'User not found' })
+```
+
+#### `health/health.controller.ts`
+
+```typescript
+@ApiTags('health')
+@ApiOperation({
+  summary: '数据库健康检查',
+  description: '通过 @nestjs/terminus 执行 SELECT 1 探针，检测 DB 连通性。',
+})
+@ApiResponse({ status: 200, description: 'DB 正常' })
+@ApiResponse({ status: 503, description: 'DB 异常' })
+```
+
+---
+
+### Step 9：验证 User Service 文档
+
+```bash
+pnpm start:user
+# 访问：http://localhost:3001/docs
+```
+
+检查项：
+- [ ] `users` 和 `health` 两个 tag 出现
+- [ ] POST /users 有完整的 Request Body schema（含 role 枚举下拉）
+- [ ] 404 / 409 响应均有描述
+- [ ] `docs-json` 端点可访问
+
+---
+
+### Step 10：Gateway — 初始化简化 Swagger
 
 修改 `apps/gateway/src/main.ts`：
 
@@ -282,7 +457,8 @@ const swaggerConfig = new DocumentBuilder()
   .setTitle('Gateway API')
   .setDescription(
     '网关入口文档。\n\n' +
-    '- 业务接口（`/api/orders/*`）代理至 Order Service，详细文档见 [http://localhost:3002/docs](http://localhost:3002/docs)\n' +
+    '- 用户接口（`/api/users/*`）代理至 User Service，详细文档见 [http://localhost:3001/docs](http://localhost:3001/docs)\n' +
+    '- 订单接口（`/api/orders/*`）代理至 Order Service，详细文档见 [http://localhost:3002/docs](http://localhost:3002/docs)\n' +
     '- 认证：POST /auth/login 获取 JWT，后续请求在 Authorization 头携带 `Bearer <token>`'
   )
   .setVersion('1.0')
@@ -299,7 +475,7 @@ SwaggerModule.setup('docs', app, swaggerDocument);
 
 ---
 
-### Step 7：给 Gateway 自身路由加装饰器
+### Step 11：给 Gateway 自身路由加装饰器
 
 #### `app.controller.ts`
 
@@ -336,17 +512,23 @@ getHello(): string { ... }
   description: '所有 /api/orders/* 请求透传至 Order Service (3002)。\n\n完整接口文档见 http://localhost:3002/docs',
 })
 
+// usersProxy
+@ApiOperation({
+  summary: '代理：用户服务',
+  description: '所有 /api/users/* 请求透传至 User Service (3001)。\n\n完整接口文档见 http://localhost:3001/docs',
+})
+
 // proxy (兜底)
 @ApiOperation({
   summary: '代理：其他服务（需 JWT）',
-  description: '所有其他 /api/* 请求（如 /api/users/*）透传至对应下游服务，需携带 Bearer Token。',
+  description: '所有其他 /api/* 请求透传至对应下游服务，需携带 Bearer Token。',
 })
 @ApiBearerAuth('access-token')
 ```
 
 ---
 
-### Step 8：验证 Gateway 文档
+### Step 12：验证 Gateway 文档
 
 ```bash
 pnpm start:gateway
@@ -356,7 +538,7 @@ pnpm start:gateway
 检查项：
 - [ ] `health`、`auth`、`proxy（代理）` 三个 tag 出现
 - [ ] POST /auth/login 的 Authorize 流程可以走通（输入 token → 后续请求自动带 Bearer）
-- [ ] 代理路由有明确说明，引导至 3002/docs
+- [ ] 代理路由有明确说明，分别引导至 3001/docs 和 3002/docs
 
 ---
 
@@ -377,7 +559,8 @@ pnpm start:gateway
 | 提交 | 内容 |
 |------|------|
 | `feat(order-service): 接入 Swagger，完整文档化所有路由` | Step 2–5 |
-| `feat(gateway): 接入简化 Swagger，文档化自身路由` | Step 6–8 |
+| `feat(user-service): 接入 Swagger，完整文档化所有路由` | Step 6–9 |
+| `feat(gateway): 接入简化 Swagger，文档化自身路由` | Step 10–12 |
 | `docs: 新增 Swagger 接入执行计划` | 本文件 |
 
 ---
