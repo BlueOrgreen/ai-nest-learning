@@ -1,5 +1,6 @@
 import { NestFactory, Reflector } from '@nestjs/core';
 import { ValidationPipe, Logger } from '@nestjs/common';
+import { DocumentBuilder, SwaggerModule } from '@nestjs/swagger';
 import { AppModule } from './app.module';
 import { AllExceptionsFilter } from './filters/all-exceptions.filter';
 import { LoggingInterceptor } from './interceptors/logging.interceptor';
@@ -43,6 +44,27 @@ async function bootstrap() {
   );
 
   const port = process.env.PORT ?? 3010;
+
+  // ── Swagger ──────────────────────────────────────────
+  const swaggerConfig = new DocumentBuilder()
+    .setTitle('Gateway API')
+    .setDescription(
+      '网关入口文档。\n\n' +
+      '- 用户接口（`/api/users/*`）代理至 User Service，详细文档见 [http://localhost:3001/docs](http://localhost:3001/docs)\n' +
+      '- 订单接口（`/api/orders/*`）代理至 Order Service，详细文档见 [http://localhost:3002/docs](http://localhost:3002/docs)\n' +
+      '- 认证：POST /auth/login 获取 JWT，后续请求在 Authorization 头携带 `Bearer <token>`',
+    )
+    .setVersion('1.0')
+    .addBearerAuth(
+      { type: 'http', scheme: 'bearer', bearerFormat: 'JWT' },
+      'access-token',
+    )
+    .build();
+  const swaggerDocument = SwaggerModule.createDocument(app, swaggerConfig);
+  SwaggerModule.setup('docs', app, swaggerDocument);
+  // 访问：http://localhost:3010/docs
+  // ─────────────────────────────────────────────────────
+
   await app.listen(port);
   logger.log(`Gateway is running on http://localhost:${port}`);
   logger.log('Proxying:  /api/users  → http://localhost:3001');
