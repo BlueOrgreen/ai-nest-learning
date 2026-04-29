@@ -1,15 +1,16 @@
 import { Module } from '@nestjs/common';
 import { TypeOrmModule } from '@nestjs/typeorm';
+import { BullModule } from '@nestjs/bullmq';
 import { Order } from './entities/order.entity';
 import { OrdersController } from './orders.controller';
 import { OrdersService } from './orders.service';
+import { NOTIFICATION_QUEUE } from '../notification/notification.constants';
 
 @Module({
   imports: [
     TypeOrmModule.forFeature([Order]),
-    // 注意：阶段一开始，OrdersService.create() 改用 dataSource.transaction()
-    // 事务内通过 manager 直接操作 Product，不再依赖 ProductsService
-    // 因此移除了对 ProductsModule 的依赖
+    // 注册 order-notification 队列，让 OrdersService 可以注入 Queue 对象（生产者角色）
+    BullModule.registerQueue({ name: NOTIFICATION_QUEUE }),
   ],
   controllers: [OrdersController],
   providers: [OrdersService],

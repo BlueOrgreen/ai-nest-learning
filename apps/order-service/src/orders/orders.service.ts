@@ -5,11 +5,14 @@ import {
   NotFoundException,
 } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
+import { InjectQueue } from '@nestjs/bullmq';
+import { Queue } from 'bullmq';
 import { DataSource, Repository } from 'typeorm';
 import { CreateOrderDto } from './dto/create-order.dto';
 import { UpdateOrderDto } from './dto/update-order.dto';
 import { Order } from './entities/order.entity';
 import { Product } from '../products/entities/product.entity';
+import { NOTIFICATION_QUEUE, ORDER_CREATED_JOB } from '../notification/notification.constants';
 
 @Injectable()
 export class OrdersService {
@@ -25,6 +28,12 @@ export class OrdersService {
      *   2. dataSource.createQueryRunner() — 写法二（QueryRunner 手动控制）
      */
     private readonly dataSource: DataSource,
+    /**
+     * BullMQ Queue 注入（生产者）
+     * 队列名称由常量 NOTIFICATION_QUEUE 统一管理，避免魔法字符串
+     */
+    @InjectQueue(NOTIFICATION_QUEUE)
+    private readonly notificationQueue: Queue,
   ) {}
 
   findAll(): Promise<Order[]> {
@@ -46,18 +55,8 @@ export class OrdersService {
     });
   }
 
-  /**
-   * 创建订单 — 写法一：dataSource.transaction()（推荐）
-   *
-   * 事务保证：扣库存 + 建订单 是原子操作
-   *   - 任何一步失败 → 自动 ROLLBACK，库存恢复
-   *   - 全部成功    → 自动 COMMIT
-   *
-   * 注意：事务内必须用回调参数 manager 操作数据库，
-   *       不能用 this.ordersRepo（它不在当前事务连接里）
-   */
   async create(dto: CreateOrderDto): Promise<Order> {
-    return this.dataSource.transaction(async (manager) => {
+    const order = await this.dataSource.transaction(async (manager) => {
       // 1. 查询商品（用 manager，而不是 this.productsService）
       const product = await manager.findOne(Product, {
         where: { id: dto.productId },
@@ -80,17 +79,43 @@ export class OrdersService {
       });
 
       // 4. 创建订单
-      const order = manager.create(Order, {
+      const newOrder = manager.create(Order, {
         userId: dto.userId,
         productId: dto.productId,
         quantity: dto.quantity,
         description: dto.description,
         amount: Number(product.price) * dto.quantity,
       });
-      return manager.save(Order, order);
+      return manager.save(Order, newOrder);
       // ↑ 回调正常返回 → TypeORM 自动 COMMIT
       // ↑ 任何步骤抛异常 → TypeORM 自动 ROLLBACK
     });
+
+    // ── 事务提交成功后，异步推送通知消息 ──────────────────
+    // 注意：推消息放在事务外，避免消息推出去但事务回滚的不一致
+    await this.notificationQueue.add(
+      ORDER_CREATED_JOB,
+      {
+        orderId: order.id,
+        userId: order.userId,
+        productId: order.productId,
+        quantity: order.quantity,
+        amount: order.amount,
+        createdAt: order.createdAt,
+      },
+      {
+        attempts: 3,          // 失败最多重试 3 次
+        backoff: {
+          type: 'exponential',
+          delay: 1000,        // 初始等待 1 秒，指数退避
+        },
+        removeOnComplete: 100, // 保留最近 100 条已完成记录（Bull Board 可查）
+        removeOnFail: 50,      // 保留最近 50 条失败记录
+      },
+    );
+    this.logger.log(`[Queue] 订单 ${order.id} 已推送通知消息`);
+
+    return order;
   }
 
   /**
