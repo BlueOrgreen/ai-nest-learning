@@ -36,23 +36,58 @@ export class OrdersService {
     private readonly notificationQueue: Queue,
   ) {}
 
-  findAll(): Promise<Order[]> {
-    return this.ordersRepo.find({ order: { createdAt: 'DESC' } });
+  async findAll(): Promise<Array<Order & { productName?: string }>> {
+    const results = await this.ordersRepo
+      .createQueryBuilder('order')
+      .leftJoin(Product, 'product', 'product.id = order.productId')
+      .addSelect('product.name', 'productName')
+      .orderBy('order.createdAt', 'DESC')
+      .getRawAndEntities();
+
+      console.log("results.entities===>", results.entities);
+      console.log("results.raw===>", results.raw);
+      
+    // results.entities 是 Order 实体数组
+    // results.raw 是原始数据数组，包含额外的 select 字段
+    return results.entities.map((order, index) => ({
+      ...order,
+      productName: results.raw[index]?.productName || null,
+    }));
   }
 
-  async findOne(id: string): Promise<Order> {
-    const order = await this.ordersRepo.findOne({ where: { id } });
-    if (!order) {
+  async findOne(id: string): Promise<Order & { productName?: string }> {
+    const result = await this.ordersRepo
+      .createQueryBuilder('order')
+      .leftJoin(Product, 'product', 'product.id = order.productId')
+      .addSelect('product.name', 'productName')
+      .where('order.id = :id', { id })
+      .getRawAndEntities();
+
+    if (result.entities.length === 0) {
       throw new NotFoundException(`Order #${id} not found`);
     }
-    return order;
+
+    const order = result.entities[0];
+    const productName = result.raw[0]?.productName || null;
+    return {
+      ...order,
+      productName,
+    };
   }
 
-  findByUser(userId: string): Promise<Order[]> {
-    return this.ordersRepo.find({
-      where: { userId },
-      order: { createdAt: 'DESC' },
-    });
+  async findByUser(userId: string): Promise<Array<Order & { productName?: string }>> {
+    const results = await this.ordersRepo
+      .createQueryBuilder('order')
+      .leftJoin(Product, 'product', 'product.id = order.productId')
+      .addSelect('product.name', 'productName')
+      .where('order.userId = :userId', { userId })
+      .orderBy('order.createdAt', 'DESC')
+      .getRawAndEntities();
+
+    return results.entities.map((order, index) => ({
+      ...order,
+      productName: results.raw[index]?.productName || null,
+    }));
   }
 
   async create(dto: CreateOrderDto): Promise<Order> {

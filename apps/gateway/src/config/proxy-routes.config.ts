@@ -18,6 +18,11 @@ export const PROXY_ROUTES: ProxyRoute[] = [
     target: 'http://localhost:3002',
     stripPrefix: '/api',
   },
+  {
+    prefix: '/api/products',
+    target: 'http://localhost:3002',
+    stripPrefix: '/api',
+  },
   // ── 健康检查路由 ──────────────────────────────────────────────────────────
   // GET /health/user  → http://localhost:3001/health
   // GET /health/order → http://localhost:3002/health

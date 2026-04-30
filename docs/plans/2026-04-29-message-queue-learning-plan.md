@@ -394,22 +394,22 @@ curl -X POST http://localhost:3002/orders \
 
 `@nestjs/microservices` 是 NestJS 官方的微服务通信框架，支持多种传输层：
 
-| Transport | 底层 | 特点 |
-|-----------|------|------|
-| `TCP` | TCP Socket | 最简单，局域网内服务间通信 |
-| `Redis` | Redis Pub/Sub | 轻量，适合简单事件广播 |
-| `MQTT` | MQTT 协议 | IoT 设备通信 |
-| `RabbitMQ` | AMQP | 企业级微服务通信 |
-| `Kafka` | Kafka | 高吞吐事件流 |
-| `gRPC` | HTTP/2 + Protobuf | 高性能 RPC，强类型 |
+| Transport  | 底层　　　　　　　| 特点　　　　　　　　　　　 |
+| ------------| -------------------| ----------------------------|
+| `TCP`      | TCP Socket　　　　| 最简单，局域网内服务间通信 |
+| `Redis`    | Redis Pub/Sub　　 | 轻量，适合简单事件广播　　 |
+| `MQTT`     | MQTT 协议　　　　 | IoT 设备通信　　　　　　　 |
+| `RabbitMQ` | AMQP　　　　　　　| 企业级微服务通信　　　　　 |
+| `Kafka`    | Kafka　　　　　　 | 高吞吐事件流　　　　　　　 |
+| `gRPC`     | HTTP/2 + Protobuf | 高性能 RPC，强类型　　　　 |
 
 **与 BullMQ 的区别：**
 
-| | BullMQ | NestJS Microservices |
-|---|--------|---------------------|
-| 通信模式 | 单向（Fire and Forget） | 支持 Request-Response（等待回复） |
-| 主要用途 | 后台任务队列 | 服务间 RPC 通信 |
-| 路由 | 按 Queue 名称 | 按 `@MessagePattern` 或 `@EventPattern` |
+| 　　　　 | BullMQ　　　　　　　　　| NestJS Microservices　　　　　　　　　　|
+| ----------| -------------------------| -----------------------------------------|
+| 通信模式 | 单向（Fire and Forget） | 支持 Request-Response（等待回复）　　　 |
+| 主要用途 | 后台任务队列　　　　　　| 服务间 RPC 通信　　　　　　　　　　　　 |
+| 路由　　 | 按 Queue 名称　　　　　 | 按 `@MessagePattern` 或 `@EventPattern` |
 
 **NestJS Microservices 示例（RabbitMQ）：**
 

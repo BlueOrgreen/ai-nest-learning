@@ -35,6 +35,8 @@ export class JwtAuthGuard extends AuthGuard('jwt') {
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   handleRequest(err: unknown, user: any) {
     if (err || !user) {
+      console.log("handleRequest====>yunfan");
+      
       throw new UnauthorizedException('请先登录，或 Token 已过期');
     }
     // eslint-disable-next-line @typescript-eslint/no-unsafe-return

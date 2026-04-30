@@ -29,6 +29,7 @@ export class ProductsController {
 
   @Post()
   create(@Body() dto: CreateProductDto) {
+    console.log("创建订单====create")
     return this.productsService.create(dto);
   }
 

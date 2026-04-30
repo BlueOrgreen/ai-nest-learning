@@ -29,8 +29,8 @@ export class AuthController {
   @ApiResponse({ status: 429, description: '登录请求过于频繁（5次/分钟限制）' })
   @Throttle({ default: { limit: 5, ttl: 60000 } })
   @Post('login')
-  @Public()
   @HttpCode(HttpStatus.OK)
+  @Public()
   login(@Body() dto: LoginDto) {
     return this.authService.login(dto);
   }

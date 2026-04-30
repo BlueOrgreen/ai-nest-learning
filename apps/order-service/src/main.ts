@@ -37,6 +37,9 @@ async function bootstrap() {
   // JSON：http://localhost:3002/docs-json
   // ─────────────────────────────────────────────────────
 
+  // 启用优雅关闭钩子，确保进程退出时释放端口等资源
+  app.enableShutdownHooks();
+
   await app.listen(process.env.PORT ?? 3002);
   console.log('Order Service is running on port 3002');
 }
