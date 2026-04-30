@@ -441,6 +441,7 @@ Week 2：阶段三（BullMQ 实战）
   Day 1：安装 + 注册 BullModule，跑通 Hello World
   Day 2-3：完成下单→通知完整链路
   Day 4：接入 Bull Board，观察队列状态
+<!-- TODO 04.30 -->
   Day 5-7：模拟失败场景，验证重试和死信队列行为
 
 Week 3：阶段四（进阶）

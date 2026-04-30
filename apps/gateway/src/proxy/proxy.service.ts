@@ -12,6 +12,9 @@ import { firstValueFrom } from 'rxjs';
 import { AxiosError } from 'axios';
 import { ProxyRoute, PROXY_ROUTES_TOKEN } from '../config/proxy-routes.config';
 import type { RequestUser } from '../auth/jwt.strategy';
+import { CircuitBreakerService } from '../resilience/circuit-breaker.service';
+import { FallbackService } from '../resilience/fallback.service';
+import { CircuitBreakerOpenError } from '../resilience/interfaces/circuit-breaker.interface';
 
 @Injectable()
 export class ProxyService {
@@ -20,6 +23,8 @@ export class ProxyService {
   constructor(
     private readonly httpService: HttpService,
     @Inject(PROXY_ROUTES_TOKEN) private readonly routes: ProxyRoute[],
+    private readonly circuitBreakerService: CircuitBreakerService,
+    private readonly fallbackService: FallbackService,
   ) {}
 
   async forward(req: Request, res: Response): Promise<void> {
@@ -44,15 +49,10 @@ export class ProxyService {
     this.logger.log(`[PROXY] [Yunfan] ${req.method} ${req.path} → ${fullUrl}`);
 
     try {
-      const response = await firstValueFrom(
-        this.httpService.request({
-          method: req.method as any,
-          url: fullUrl,
-          headers,
-          data: req.body && Object.keys(req.body).length > 0 ? req.body : undefined,
-          // 不让 axios 抛出 4xx 错误，交由我们自己处理
-          validateStatus: () => true,
-        }),
+      // 通过熔断器执行请求
+      const response = await this.circuitBreakerService.execute(
+        route.target, // 使用 target 作为熔断器 key
+        () => this.makeRequest(req.method, fullUrl, headers, req.body),
       );
 
       // 透传下游响应 headers（跳过无法设置的头）
@@ -63,15 +63,42 @@ export class ProxyService {
         }
       });
 
+      // 缓存成功的响应（用于降级策略）
+      this.fallbackService.cacheResponse(route.target, downstreamPath, response.data);
+
       res.status(response.status).json(response.data);
-    } catch (err) {
-      const axiosErr = err as AxiosError;
-      this.logger.error(
-        `[PROXY] Failed to forward to ${fullUrl}: ${axiosErr.message}`,
-      );
-      throw new BadGatewayException(
-        `Upstream service unavailable: ${route.target}`,
-      );
+    } catch (error) {
+      if (error instanceof CircuitBreakerOpenError) {
+        // 熔断器打开，返回降级响应
+        const fallbackResponse = this.fallbackService.getFallbackResponse(
+          route.target,
+          downstreamPath,
+          {
+            method: req.method,
+            headers: headers as Record<string, string>,
+            body: req.body,
+          },
+        );
+
+        // 设置降级响应头
+        Object.entries(fallbackResponse.headers || {}).forEach(([key, value]) => {
+          res.setHeader(key, value);
+        });
+
+        res.status(fallbackResponse.statusCode).json(fallbackResponse.body);
+        this.logger.warn(
+          `[PROXY] Circuit breaker open for ${route.target}, returning fallback response`,
+        );
+      } else {
+        // 其他错误（网络错误、下游服务错误等）
+        const axiosErr = error as AxiosError;
+        this.logger.error(
+          `[PROXY] Failed to forward to ${fullUrl}: ${axiosErr.message}`,
+        );
+        throw new BadGatewayException(
+          `Upstream service unavailable: ${route.target}`,
+        );
+      }
     }
   }
 
@@ -117,5 +144,33 @@ export class ProxyService {
     }
 
     return headers;
+  }
+
+  /**
+   * 执行 HTTP 请求
+   */
+  private async makeRequest(
+    method: string,
+    url: string,
+    headers: Record<string, string>,
+    body?: any,
+  ): Promise<any> {
+    try {
+      const response = await firstValueFrom(
+        this.httpService.request({
+          method: method as any,
+          url,
+          headers,
+          data: body && Object.keys(body).length > 0 ? body : undefined,
+          // 不让 axios 抛出 4xx 错误，交由我们自己处理
+          validateStatus: () => true,
+        }),
+      );
+
+      return response;
+    } catch (error) {
+      // 将 AxiosError 抛出，让熔断器记录失败
+      throw error;
+    }
   }
 }
