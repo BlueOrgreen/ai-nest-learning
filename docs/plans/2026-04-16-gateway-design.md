@@ -98,16 +98,16 @@ Client Request
 
 ### Phase 1 — HTTP 模式（全链路打通）
 
-| 步骤 | 任务 | 关键知识点 |
-|------|------|-----------|
-| 1 | 将项目改造为 NestJS Monorepo | `nest g app`、workspace 配置 |
-| 2 | 实现 `user-service`（CRUD 接口） | Controller、Service、基础 DTO |
-| 3 | 实现 `order-service`（简单订单接口） | 同上 |
-| 4 | 网关实现动态路由转发（HTTP） | `HttpModule`、`HttpService`、反向代理 |
-| 5 | 实现 JWT 认证 & 角色鉴权 | `@nestjs/jwt`、`PassportModule`、Guards |
-| 6 | 实现全局限流 | `@nestjs/throttler`、`ThrottlerGuard` |
-| 7 | 实现统一日志、响应、异常处理 | `Interceptor`、`ExceptionFilter` |
-| 8 | 实现熔断 & 重试 | `opossum`、`axios-retry` |
+| 步骤 | 任务　　　　　　　　　　　　　　　　 | 关键知识点　　　　　　　　　　　　　　　|
+| ------| --------------------------------------| -----------------------------------------|
+| 1　　| 将项目改造为 NestJS Monorepo　　　　 | `nest g app`、workspace 配置　　　　　　|
+| 2　　| 实现 `user-service`（CRUD 接口）　　 | Controller、Service、基础 DTO　　　　　 |
+| 3　　| 实现 `order-service`（简单订单接口） | 同上　　　　　　　　　　　　　　　　　　|
+| 4　　| 网关实现动态路由转发（HTTP）　　　　 | `HttpModule`、`HttpService`、反向代理　 |
+| 5　　| 实现 JWT 认证 & 角色鉴权　　　　　　 | `@nestjs/jwt`、`PassportModule`、Guards |
+| 6　　| 实现全局限流　　　　　　　　　　　　 | `@nestjs/throttler`、`ThrottlerGuard`　 |
+| 7　　| 实现统一日志、响应、异常处理　　　　 | `Interceptor`、`ExceptionFilter`　　　　|
+| 8　　| 实现熔断 & 重试　　　　　　　　　　　| `opossum`、`axios-retry`　　　　　　　　|
 
 ### Phase 2 — TCP 微服务（重构对比）
 
