@@ -156,7 +156,7 @@ feat(step-N): <任务描述>
 | `feat(middleware)`: 实现中间件层　　　　　　　 | RequestIdMiddleware、LoggerMiddleware、CORS | 2026-04-22 | `fa4bbdb` |
 | `feat(step-6)`: 实现全局限流　　　　　　　　　 | @nestjs/throttler、ThrottlerGuard　　　　　 | —　　　　　| —         |
 | `feat(step-7)`: 实现统一日志、响应、异常处理　 | Interceptor、ExceptionFilter　　　　　　　　| —　　　　　| —         |
-| `feat(step-8)`: 实现熔断 & 重试　　　　　　　　| opossum、axios-retry　　　　　　　　　　　　| —　　　　　| —         |
+| `feat(step-8)`: 实现熔断 & 重试　　　　　　　　| opossum、axios-retry　　　　　　　　　　　　| 2026-04-30 | `80ec085` |
 | `feat(step-9)`: 下游服务添加 TCP 监听　　　　　| createMicroservice、@MessagePattern　　　　 | —　　　　　| —         |
 | `feat(step-10)`: 网关改用 ClientsModule（TCP） | ClientProxy、send()、emit()　　　　　　　　 | —　　　　　| —         |
 | `feat(step-11)`: 对比总结 HTTP vs TCP 模式　　 | 补充对比文档　　　　　　　　　　　　　　　　| —　　　　　| —         |
