@@ -11,7 +11,7 @@ services:
       - ./nginx/ssl:/etc/nginx/ssl:ro
     depends_on:
       - gateway
-      - nextjs
+      - web-nest
     restart: unless-stopped
 
   mysql:
@@ -66,9 +66,9 @@ services:
       - mysql
     restart: unless-stopped
 
-  nextjs:
+  web-nest:
     build:
-      context: ./frontend
+      context: /Users/heytea/Desktop/my-learning/web-nest
       dockerfile: Dockerfile
     ports:
       - "3000:3000"

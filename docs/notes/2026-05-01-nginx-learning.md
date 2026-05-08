@@ -328,4 +328,4 @@ proxy_read_timeout 300s;
 | 反向代理 | 隐藏后端容器，接收外部请求 |
 | 协议转换 | HTTP → HTTPS（后续） |
 | 头部传递 | 保持客户端原始信息 |
-| WebSocket | 支持 Next.js 热更新 |
+| WebSocket | 支持 Next.js 热更新 |      
