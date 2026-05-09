@@ -6,7 +6,7 @@
 
 ## Overview
 
-This directory contains guidelines for backend development. Fill in each file with your project's specific conventions.
+This directory contains guidelines for backend development. This is a **NestJS monorepo** with three apps (`gateway`, `order-service`, `user-service`) and two shared libs (`database`, `common`).
 
 ---
 
@@ -14,25 +14,33 @@ This directory contains guidelines for backend development. Fill in each file wi
 
 | Guide | Description | Status |
 |-------|-------------|--------|
-| [Directory Structure](./directory-structure.md) | Module organization and file layout | To fill |
-| [Database Guidelines](./database-guidelines.md) | ORM patterns, queries, migrations | To fill |
-| [Error Handling](./error-handling.md) | Error types, handling strategies | To fill |
-| [Quality Guidelines](./quality-guidelines.md) | Code standards, forbidden patterns | To fill |
-| [Logging Guidelines](./logging-guidelines.md) | Structured logging, log levels | To fill |
+| [Directory Structure](./directory-structure.md) | Module organization and file layout | ✅ Filled |
+| [Database Guidelines](./database-guidelines.md) | ORM patterns, queries, migrations | ✅ Filled |
+| [Error Handling](./error-handling.md) | Error types, handling strategies | ✅ Filled |
+| [Quality Guidelines](./quality-guidelines.md) | Code standards, forbidden patterns | ✅ Filled |
+| [Logging Guidelines](./logging-guidelines.md) | Structured logging, log levels | ✅ Filled |
 
 ---
 
-## How to Fill These Guidelines
+## Project Architecture
 
-For each guideline file:
+```
+apps/
+├── gateway/          # API Gateway — auth, proxy, rate limiting
+├── order-service/    # Order management
+└── user-service/     # User management
 
-1. Document your project's **actual conventions** (not ideals)
-2. Include **code examples** from your codebase
-3. List **forbidden patterns** and why
-4. Add **common mistakes** your team has made
-
-The goal is to help AI assistants and new team members understand how YOUR project works.
+libs/
+├── database/         # TypeORM setup
+└── common/           # Shared filters, interceptors
+```
 
 ---
 
-**Language**: All documentation should be written in **English**.
+## Language
+
+All code and comments use **Chinese** for business logic summaries and API documentation (Swagger decorators use Chinese summaries).
+
+---
+
+**Language**: All documentation is written in **English** for AI assistant compatibility; code comments may be Chinese.

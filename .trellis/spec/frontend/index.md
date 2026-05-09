@@ -6,7 +6,9 @@
 
 ## Overview
 
-This directory contains guidelines for frontend development. Fill in each file with your project's specific conventions.
+**This project is backend-only** (NestJS monorepo). No frontend application exists in this repository.
+
+The frontend guidelines below are documented for reference only. When a frontend is added, fill in each file with actual project conventions.
 
 ---
 
@@ -14,16 +16,16 @@ This directory contains guidelines for frontend development. Fill in each file w
 
 | Guide | Description | Status |
 |-------|-------------|--------|
-| [Directory Structure](./directory-structure.md) | Module organization and file layout | To fill |
-| [Component Guidelines](./component-guidelines.md) | Component patterns, props, composition | To fill |
-| [Hook Guidelines](./hook-guidelines.md) | Custom hooks, data fetching patterns | To fill |
-| [State Management](./state-management.md) | Local state, global state, server state | To fill |
-| [Quality Guidelines](./quality-guidelines.md) | Code standards, forbidden patterns | To fill |
-| [Type Safety](./type-safety.md) | Type patterns, validation | To fill |
+| [Directory Structure](./directory-structure.md) | Module organization and file layout | ⚠️ N/A — Backend-only project |
+| [Component Guidelines](./component-guidelines.md) | Component patterns, props, composition | ⚠️ N/A — Backend-only project |
+| [Hook Guidelines](./hook-guidelines.md) | Custom hooks, data fetching patterns | ⚠️ N/A — Backend-only project |
+| [State Management](./state-management.md) | Local state, global state, server state | ⚠️ N/A — Backend-only project |
+| [Quality Guidelines](./quality-guidelines.md) | Code standards, forbidden patterns | ⚠️ N/A — Backend-only project |
+| [Type Safety](./type-safety.md) | Type patterns, validation | ⚠️ N/A — Backend-only project |
 
 ---
 
-## How to Fill These Guidelines
+## When a Frontend is Added
 
 For each guideline file:
 
@@ -36,4 +38,4 @@ The goal is to help AI assistants and new team members understand how YOUR proje
 
 ---
 
-**Language**: All documentation should be written in **English**.
+**Language**: All documentation should be written in **English** for AI assistant compatibility.

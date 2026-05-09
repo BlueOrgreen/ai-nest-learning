@@ -6,49 +6,29 @@
 
 ## Overview
 
-<!--
-Document your project's frontend directory structure here.
+**This project is backend-only** (NestJS monorepo). No frontend application exists in this repository.
 
-Questions to answer:
-- Where do components live?
-- How are features/modules organized?
-- Where are shared utilities?
-- How are assets organized?
--->
-
-(To be filled by the team)
+If a frontend is added in the future, it would typically live in `apps/web` or `apps/frontend` and follow these conventions:
 
 ---
 
-## Directory Layout
+## Future Frontend Directory Layout (Reference)
 
 ```
-<!-- Replace with your actual structure -->
-src/
-├── ...
-└── ...
+apps/
+└── web/                  # (future) React/Next.js frontend
+    └── src/
+        ├── components/     # Shared UI components
+        ├── features/       # Feature-based modules
+        ├── hooks/          # Custom React hooks
+        ├── lib/            # Utilities and helpers
+        ├── pages/          # Next.js pages (if using Pages Router)
+        ├── app/            # Next.js app directory (if using App Router)
+        └── styles/         # Global styles
 ```
 
 ---
 
-## Module Organization
+## Current State
 
-<!-- How should new features be organized? -->
-
-(To be filled by the team)
-
----
-
-## Naming Conventions
-
-<!-- File and folder naming rules -->
-
-(To be filled by the team)
-
----
-
-## Examples
-
-<!-- Link to well-organized modules as examples -->
-
-(To be filled by the team)
+All application code in this repository is backend (NestJS). Frontend guidelines are documented here for reference only.

@@ -1,4 +1,4 @@
-# Quality Guidelines
+# Frontend Quality Guidelines
 
 > Code quality standards for frontend development.
 
@@ -6,46 +6,10 @@
 
 ## Overview
 
-<!--
-Document your project's quality standards here.
-
-Questions to answer:
-- What patterns are forbidden?
-- What linting rules do you enforce?
-- What are your testing requirements?
-- What code review standards apply?
--->
-
-(To be filled by the team)
+**This project is backend-only** (NestJS monorepo). No frontend application exists in this repository.
 
 ---
 
-## Forbidden Patterns
+## Current State
 
-<!-- Patterns that should never be used and why -->
-
-(To be filled by the team)
-
----
-
-## Required Patterns
-
-<!-- Patterns that must always be used -->
-
-(To be filled by the team)
-
----
-
-## Testing Requirements
-
-<!-- What level of testing is expected -->
-
-(To be filled by the team)
-
----
-
-## Code Review Checklist
-
-<!-- What reviewers should check -->
-
-(To be filled by the team)
+This file is not applicable to the current project. When a frontend is added, document quality standards here.
