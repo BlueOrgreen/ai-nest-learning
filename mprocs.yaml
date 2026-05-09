@@ -1,0 +1,28 @@
+# ── 全局配置 ─────────────────────────────────────────
+proc_log:
+  dir: .mprocs-logs
+  mode: truncate
+
+scrollback: 5000
+
+procs:
+  gateway:
+    shell: pnpm start:gateway
+    stop: SIGINT
+    autostart: true
+    log:
+      mode: append
+
+  order-service:
+    shell: pnpm start:order
+    stop: SIGINT
+    autostart: true
+    log:
+      mode: append
+
+  user-service:
+    shell:  pnpm start:user
+    stop: SIGINT
+    autostart: true
+    log:
+      mode: append
