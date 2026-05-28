@@ -80,6 +80,8 @@ services:
         NEXT_PUBLIC_ORDER_API_BASE_URL: https://api.chenchar.com
         NEXT_PUBLIC_ORDER_SERVICE_BASE_URL: https://api.chenchar.com
         NEXT_PUBLIC_USER_API_BASE_URL: https://api.chenchar.com
+    environment:
+      - JWT_SECRET=${JWT_SECRET:-my-firstnest-secret-2026}
     expose:
       - "3000"
     restart: unless-stopped
