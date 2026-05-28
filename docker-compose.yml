@@ -83,9 +83,22 @@ services:
         NEXT_PUBLIC_ORDER_SERVICE_BASE_URL: https://api.chenchar.com
         NEXT_PUBLIC_USER_API_BASE_URL: https://api.chenchar.com
     environment:
+      # Docker 可能覆盖 HOSTNAME；必须 0.0.0.0，否则 Nginx 反代会 502
+      - HOSTNAME=0.0.0.0
+      - PORT=3000
       - JWT_SECRET=${JWT_SECRET:-my-firstnest-secret-2026}
     expose:
       - "3000"
+    healthcheck:
+      test:
+        [
+          "CMD-SHELL",
+          "node -e \"fetch('http://127.0.0.1:3000').then((r)=>process.exit(r.status<500?0:1)).catch(()=>process.exit(1))\"",
+        ]
+      interval: 15s
+      timeout: 5s
+      retries: 5
+      start_period: 60s
     restart: unless-stopped
 
 volumes:
