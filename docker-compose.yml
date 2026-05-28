@@ -34,8 +34,13 @@ services:
       - DB_PASSWORD=${MYSQL_ROOT_PASSWORD}
       - DB_NAME=${MYSQL_DATABASE}
       - JWT_SECRET=${JWT_SECRET}
+      - CORS_ORIGINS=${CORS_ORIGINS:-https://www.admin.chenchar.com,http://localhost:3000}
+      - USER_SERVICE_URL=${USER_SERVICE_URL:-http://user-service:3001}
+      - ORDER_SERVICE_URL=${ORDER_SERVICE_URL:-http://order-service:3002}
     depends_on:
       - mysql
+      - user-service
+      - order-service
     restart: unless-stopped
 
   user-service:
@@ -68,10 +73,15 @@ services:
 
   web-nest:
     build:
-      context: /Users/heytea/Desktop/my-learning/web-nest
+      context: ${WEB_NEST_PATH:-../web-nest}
       dockerfile: Dockerfile
-    ports:
-      - "3000:3000"
+      args:
+        NEXT_PUBLIC_API_BASE_URL: https://api.chenchar.com
+        NEXT_PUBLIC_ORDER_API_BASE_URL: https://api.chenchar.com
+        NEXT_PUBLIC_ORDER_SERVICE_BASE_URL: https://api.chenchar.com
+        NEXT_PUBLIC_USER_API_BASE_URL: https://api.chenchar.com
+    expose:
+      - "3000"
     restart: unless-stopped
 
 volumes:

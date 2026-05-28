@@ -7,34 +7,35 @@ export interface ProxyRoute {
   stripPrefix: string;
 }
 
+const userServiceTarget =
+  process.env.USER_SERVICE_URL ?? 'http://localhost:3001';
+const orderServiceTarget =
+  process.env.ORDER_SERVICE_URL ?? 'http://localhost:3002';
+
 export const PROXY_ROUTES: ProxyRoute[] = [
   {
     prefix: '/api/users',
-    target: 'http://localhost:3001',
+    target: userServiceTarget,
     stripPrefix: '/api',
   },
   {
     prefix: '/api/orders',
-    target: 'http://localhost:3002',
+    target: orderServiceTarget,
     stripPrefix: '/api',
   },
   {
     prefix: '/api/products',
-    target: 'http://localhost:3002',
+    target: orderServiceTarget,
     stripPrefix: '/api',
   },
-  // ── 健康检查路由 ──────────────────────────────────────────────────────────
-  // GET /health/user  → http://localhost:3001/health
-  // GET /health/order → http://localhost:3002/health
-  // stripPrefix 去掉 /health/user 或 /health/order 前缀后，下游收到 /health
   {
     prefix: '/health/user',
-    target: 'http://localhost:3001',
+    target: userServiceTarget,
     stripPrefix: '/health/user',
   },
   {
     prefix: '/health/order',
-    target: 'http://localhost:3002',
+    target: orderServiceTarget,
     stripPrefix: '/health/order',
   },
 ];
