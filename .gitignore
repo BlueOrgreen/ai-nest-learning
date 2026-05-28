@@ -46,7 +46,8 @@ apps/order-service/.env
 
 # local db dumps (do not commit)
 /sql
-/mysql/init/dumps/*.sql
+# 若种子 SQL 过大可不提交，本地自行 mysqldump 到 mysql/seeds/
+# /mysql/seeds/*.sql
 
 # temp directory
 .temp

@@ -29,7 +29,9 @@
     "seed:products": "ts-node --transpile-only -r tsconfig-paths/register apps/order-service/src/products/seed.ts",
     "seed:products:sql": "ts-node --transpile-only -r tsconfig-paths/register apps/order-service/src/products/seed-sql.ts",
     "migrate:local": "ts-node --transpile-only scripts/migrate-local.ts",
-    "migrate:local:status": "ts-node --transpile-only scripts/migrate-local.ts -- --status"
+    "migrate:local:status": "ts-node --transpile-only scripts/migrate-local.ts -- --status",
+    "db:init": "bash scripts/db-init.sh",
+    "db:init:docker": "bash scripts/db-init.sh --wait"
   },
   "dependencies": {
     "@bull-board/api": "^7.0.0",

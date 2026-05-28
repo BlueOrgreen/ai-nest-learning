@@ -87,17 +87,14 @@ ORDER_DB_DATABASE=nest_order_service
 
 `user-service` / `order-service` 会分别连接上述库，勿再共用 `MYSQL_DATABASE=nest_db`。
 
-**已有 MySQL 数据卷时导入本地数据**（`mysql/init/dumps/*.sql` 仅在首次空卷初始化时自动执行）：
+**已有 MySQL 数据卷时导入数据**（空卷首次启动会自动执行 `mysql/` 下脚本；否则）：
 
 ```bash
-export MYSQL_ROOT_PASSWORD=你的密码
-MYSQL_C=my-firstnest-mysql-1   # docker compose ps 中的 mysql 容器名
-
-docker exec -i $MYSQL_C mysql -uroot -p"$MYSQL_ROOT_PASSWORD" nest_user_service \
-  < mysql/init/dumps/nest_user_service.sql
-docker exec -i $MYSQL_C mysql -uroot -p"$MYSQL_ROOT_PASSWORD" nest_order_service \
-  < mysql/init/dumps/nest_order_service.sql
+cp .env.example .env
+pnpm db:init
 ```
+
+详见根目录 [README.md](../README.md#mysql-数据初始化一键脚本)。
 
 更新代码后务必重建服务使库名生效：
 
