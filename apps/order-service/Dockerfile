@@ -20,4 +20,4 @@ COPY --from=builder /app/node_modules ./node_modules
 
 EXPOSE 3002
 
-CMD ["node", "dist/apps/order-service/main.js"]
+CMD ["node", "dist/apps/order-service/apps/order-service/src/main.js"]

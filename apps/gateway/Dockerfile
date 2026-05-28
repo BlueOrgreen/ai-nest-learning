@@ -20,4 +20,4 @@ COPY --from=builder /app/node_modules ./node_modules
 
 EXPOSE 3010
 
-CMD ["node", "dist/apps/gateway/main.js"]
+CMD ["node", "dist/apps/gateway/apps/gateway/src/main.js"]
