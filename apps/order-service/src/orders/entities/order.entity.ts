@@ -5,7 +5,12 @@ import {
   PrimaryGeneratedColumn,
 } from 'typeorm';
 
-export type OrderStatus = 'pending' | 'paid' | 'shipped' | 'completed' | 'cancelled';
+export type OrderStatus =
+  | 'pending'
+  | 'paid'
+  | 'shipped'
+  | 'completed'
+  | 'cancelled';
 
 @Entity('orders')
 export class Order {

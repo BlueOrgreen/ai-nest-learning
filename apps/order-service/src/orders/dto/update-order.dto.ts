@@ -13,7 +13,10 @@ export class UpdateOrderDto {
   @IsOptional()
   description?: string;
 
-  @ApiPropertyOptional({ example: 99.9, description: '订单金额（保留两位小数）' })
+  @ApiPropertyOptional({
+    example: 99.9,
+    description: '订单金额（保留两位小数）',
+  })
   @IsNumber({ maxDecimalPlaces: 2 })
   @IsPositive()
   @IsOptional()

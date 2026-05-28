@@ -12,6 +12,8 @@ async function bootstrap() {
       whitelist: true,
       forbidNonWhitelisted: true,
       transform: true,
+      // 校验失败时保留全部字段错误，由 AllExceptionsFilter 拼接进 message
+      stopAtFirstError: false,
     }),
   );
 

@@ -1,0 +1,4 @@
+{"file": ".trellis/tasks/05-20-product-management/prd.md", "reason": "Verify implementation against acceptance criteria"}
+{"file": ".trellis/spec/backend/quality-guidelines.md", "reason": "Lint and code quality bar"}
+{"file": ".trellis/spec/backend/error-handling.md", "reason": "Error handling compliance"}
+{"file": ".trellis/spec/backend/database-guidelines.md", "reason": "Entity and query conventions"}

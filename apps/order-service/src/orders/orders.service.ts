@@ -10,9 +10,16 @@ import { Queue } from 'bullmq';
 import { DataSource, Repository } from 'typeorm';
 import { CreateOrderDto } from './dto/create-order.dto';
 import { UpdateOrderDto } from './dto/update-order.dto';
+import { QueryOrderDto } from './dto/query-order.dto';
 import { Order } from './entities/order.entity';
 import { Product } from '../products/entities/product.entity';
-import { NOTIFICATION_QUEUE, ORDER_CREATED_JOB } from '../notification/notification.constants';
+import {
+  NOTIFICATION_QUEUE,
+  ORDER_CREATED_JOB,
+} from '../notification/notification.constants';
+import { ProductsService } from '../products/products.service';
+import { StockAdjustmentsService } from '../products/stock-adjustments.service';
+import { UserLookupService } from '../products/user-lookup.service';
 
 @Injectable()
 export class OrdersService {
@@ -21,20 +28,59 @@ export class OrdersService {
   constructor(
     @InjectRepository(Order)
     private readonly ordersRepo: Repository<Order>,
-    /**
-     * DataSource：TypeORM 的数据源对象，持有连接池
-     * 用途：
-     *   1. dataSource.transaction()  — 写法一（推荐）
-     *   2. dataSource.createQueryRunner() — 写法二（QueryRunner 手动控制）
-     */
     private readonly dataSource: DataSource,
-    /**
-     * BullMQ Queue 注入（生产者）
-     * 队列名称由常量 NOTIFICATION_QUEUE 统一管理，避免魔法字符串
-     */
     @InjectQueue(NOTIFICATION_QUEUE)
     private readonly notificationQueue: Queue,
+    private readonly productsService: ProductsService,
+    private readonly stockAdjustmentsService: StockAdjustmentsService,
+    private readonly userLookup: UserLookupService,
   ) {}
+
+  async findPaginated(dto: QueryOrderDto) {
+    const page = dto.page ?? 1;
+    const pageSize = dto.pageSize ?? 20;
+    const userId = dto.userId ?? '';
+    const status = dto.status ?? '';
+    const sortBy = dto.sortBy ?? 'createdAt';
+    const sortOrder = dto.sortOrder ?? 'desc';
+    const skip = (page - 1) * pageSize;
+
+    const qb = this.ordersRepo
+      .createQueryBuilder('order')
+      .leftJoin(Product, 'product', 'product.id = order.productId')
+      .addSelect('product.name', 'productName');
+
+    if (userId) {
+      qb.andWhere('order.userId = :userId', { userId });
+    }
+
+    if (status) {
+      qb.andWhere('order.status = :status', { status });
+    }
+
+    const total = await qb.getCount();
+
+    qb.orderBy(`order.${sortBy}`, sortOrder.toUpperCase() as 'ASC' | 'DESC')
+      .skip(skip)
+      .take(pageSize);
+
+    const results = await qb.getRawAndEntities();
+
+    const data = results.entities.map((order, index) => ({
+      ...order,
+      productName: results.raw[index]?.productName || null,
+    }));
+
+    return {
+      data,
+      meta: {
+        total,
+        page,
+        pageSize,
+        totalPages: Math.ceil(total / pageSize),
+      },
+    };
+  }
 
   async findAll(): Promise<Array<Order & { productName?: string }>> {
     const results = await this.ordersRepo
@@ -44,11 +90,6 @@ export class OrdersService {
       .orderBy('order.createdAt', 'DESC')
       .getRawAndEntities();
 
-      console.log("results.entities===>", results.entities);
-      console.log("results.raw===>", results.raw);
-      
-    // results.entities 是 Order 实体数组
-    // results.raw 是原始数据数组，包含额外的 select 字段
     return results.entities.map((order, index) => ({
       ...order,
       productName: results.raw[index]?.productName || null,
@@ -75,7 +116,9 @@ export class OrdersService {
     };
   }
 
-  async findByUser(userId: string): Promise<Array<Order & { productName?: string }>> {
+  async findByUser(
+    userId: string,
+  ): Promise<Array<Order & { productName?: string }>> {
     const results = await this.ordersRepo
       .createQueryBuilder('order')
       .leftJoin(Product, 'product', 'product.id = order.productId')
@@ -91,27 +134,29 @@ export class OrdersService {
   }
 
   async create(dto: CreateOrderDto): Promise<Order> {
+    await this.userLookup.assertUserExists(dto.userId);
+
     const order = await this.dataSource.transaction(async (manager) => {
       // 1. 查询商品（用 manager，而不是 this.productsService）
       const product = await manager.findOne(Product, {
         where: { id: dto.productId },
       });
-      if (!product) {
-        throw new NotFoundException(`Product #${dto.productId} not found`);
-      }
+      this.productsService.assertSellable(product, dto.productId);
 
-      // 2. 检查库存
-      if (product.stock < dto.quantity) {
+      if (product!.stock < dto.quantity) {
         throw new BadRequestException(
-          `库存不足：商品 "${product.name}" 当前库存 ${product.stock}，需要 ${dto.quantity}`,
+          `库存不足：商品 "${product!.name}" 当前库存 ${product!.stock}，需要 ${dto.quantity}`,
         );
       }
 
-      // 3. 扣减库存
-      await manager.save(Product, {
-        ...product,
-        stock: product.stock - dto.quantity,
-      });
+      await this.stockAdjustmentsService.recordWithManager(
+        manager,
+        product!,
+        -dto.quantity,
+        'order',
+        dto.userId,
+        `订单扣减 ${dto.quantity}`,
+      );
 
       // 4. 创建订单
       const newOrder = manager.create(Order, {
@@ -119,7 +164,7 @@ export class OrdersService {
         productId: dto.productId,
         quantity: dto.quantity,
         description: dto.description,
-        amount: Number(product.price) * dto.quantity,
+        amount: Number(product!.price) * dto.quantity,
       });
       return manager.save(Order, newOrder);
       // ↑ 回调正常返回 → TypeORM 自动 COMMIT
@@ -139,13 +184,13 @@ export class OrdersService {
         createdAt: order.createdAt,
       },
       {
-        attempts: 3,          // 失败最多重试 3 次
+        attempts: 3, // 失败最多重试 3 次
         backoff: {
           type: 'exponential',
-          delay: 1000,        // 初始等待 1 秒，指数退避
+          delay: 1000, // 初始等待 1 秒，指数退避
         },
         removeOnComplete: 100, // 保留最近 100 条已完成记录（Bull Board 可查）
-        removeOnFail: 50,      // 保留最近 50 条失败记录
+        removeOnFail: 50, // 保留最近 50 条失败记录
       },
     );
     this.logger.log(`[Queue] 订单 ${order.id} 已推送通知消息`);
@@ -160,6 +205,8 @@ export class OrdersService {
    * 适合需要在事务中执行非数据库操作（如发消息队列）的场景
    */
   async createWithQueryRunner(dto: CreateOrderDto): Promise<Order> {
+    await this.userLookup.assertUserExists(dto.userId);
+
     // 1. 从连接池取出一个专用连接
     const queryRunner = this.dataSource.createQueryRunner();
     await queryRunner.connect();
@@ -172,27 +219,29 @@ export class OrdersService {
       const product = await queryRunner.manager.findOne(Product, {
         where: { id: dto.productId },
       });
-      if (!product) {
-        throw new NotFoundException(`Product #${dto.productId} not found`);
-      }
+      this.productsService.assertSellable(product, dto.productId);
 
-      if (product.stock < dto.quantity) {
+      if (product!.stock < dto.quantity) {
         throw new BadRequestException(
-          `库存不足：商品 "${product.name}" 当前库存 ${product.stock}，需要 ${dto.quantity}`,
+          `库存不足：商品 "${product!.name}" 当前库存 ${product!.stock}，需要 ${dto.quantity}`,
         );
       }
 
-      await queryRunner.manager.save(Product, {
-        ...product,
-        stock: product.stock - dto.quantity,
-      });
+      await this.stockAdjustmentsService.recordWithManager(
+        queryRunner.manager,
+        product!,
+        -dto.quantity,
+        'order',
+        dto.userId,
+        `订单扣减 ${dto.quantity}`,
+      );
 
       const order = queryRunner.manager.create(Order, {
         userId: dto.userId,
         productId: dto.productId,
         quantity: dto.quantity,
         description: dto.description,
-        amount: Number(product.price) * dto.quantity,
+        amount: Number(product!.price) * dto.quantity,
       });
       const saved = await queryRunner.manager.save(Order, order);
 
@@ -249,7 +298,8 @@ export class OrdersService {
       const product = await qr.manager.findOne(Product, {
         where: { id: productId },
       });
-      if (!product) throw new NotFoundException(`Product #${productId} not found`);
+      if (!product)
+        throw new NotFoundException(`Product #${productId} not found`);
 
       await qr.commitTransaction();
       return {
@@ -284,7 +334,8 @@ export class OrdersService {
       const product = await qr.manager.findOne(Product, {
         where: { id: productId },
       });
-      if (!product) throw new NotFoundException(`Product #${productId} not found`);
+      if (!product)
+        throw new NotFoundException(`Product #${productId} not found`);
 
       const originalStock = product.stock;
 
@@ -345,7 +396,9 @@ export class OrdersService {
 
     try {
       // 第一次读
-      const p1 = await qr.manager.findOne(Product, { where: { id: productId } });
+      const p1 = await qr.manager.findOne(Product, {
+        where: { id: productId },
+      });
       if (!p1) throw new NotFoundException(`Product #${productId} not found`);
       const firstRead = p1.stock;
 
@@ -357,7 +410,9 @@ export class OrdersService {
       await this.sleep(3000);
 
       // 第二次读（READ COMMITTED 下会看到外部已提交的修改）
-      const p2 = await qr.manager.findOne(Product, { where: { id: productId } });
+      const p2 = await qr.manager.findOne(Product, {
+        where: { id: productId },
+      });
       const secondRead = p2?.stock ?? firstRead;
 
       await qr.commitTransaction();
@@ -433,9 +488,10 @@ export class OrdersService {
         firstCount,
         secondCount,
         isDifferent: firstCount !== secondCount,
-        note: firstCount !== secondCount
-          ? '✅ 复现成功：同一事务内，两次范围查询结果不同（出现了新行）'
-          : '⚠️ 未复现：等待期间没有其他事务插入新数据',
+        note:
+          firstCount !== secondCount
+            ? '✅ 复现成功：同一事务内，两次范围查询结果不同（出现了新行）'
+            : '⚠️ 未复现：等待期间没有其他事务插入新数据',
       };
     } catch (err) {
       await qr.rollbackTransaction();
@@ -465,10 +521,14 @@ export class OrdersService {
     const level: string = result[0]?.level ?? 'UNKNOWN';
 
     const descriptions: Record<string, string> = {
-      'READ-UNCOMMITTED': '读未提交：可读取未提交数据，会产生脏读/不可重复读/幻读',
-      'READ-COMMITTED': '读已提交：只读已提交数据，解决脏读，但仍有不可重复读/幻读',
-      'REPEATABLE-READ': 'MySQL 默认：快照读保证同一事务内结果一致，间隙锁部分解决幻读',
-      SERIALIZABLE: '串行化：最高隔离，完全串行执行，无任何并发异常，但性能最低',
+      'READ-UNCOMMITTED':
+        '读未提交：可读取未提交数据，会产生脏读/不可重复读/幻读',
+      'READ-COMMITTED':
+        '读已提交：只读已提交数据，解决脏读，但仍有不可重复读/幻读',
+      'REPEATABLE-READ':
+        'MySQL 默认：快照读保证同一事务内结果一致，间隙锁部分解决幻读',
+      SERIALIZABLE:
+        '串行化：最高隔离，完全串行执行，无任何并发异常，但性能最低',
     };
 
     return {
@@ -492,7 +552,11 @@ export class OrdersService {
    */
   async readWithIsolationLevel(
     productId: string,
-    level: 'READ UNCOMMITTED' | 'READ COMMITTED' | 'REPEATABLE READ' | 'SERIALIZABLE',
+    level:
+      | 'READ UNCOMMITTED'
+      | 'READ COMMITTED'
+      | 'REPEATABLE READ'
+      | 'SERIALIZABLE',
   ): Promise<{
     isolationLevel: string;
     productId: string;
@@ -507,7 +571,8 @@ export class OrdersService {
       const product = await qr.manager.findOne(Product, {
         where: { id: productId },
       });
-      if (!product) throw new NotFoundException(`Product #${productId} not found`);
+      if (!product)
+        throw new NotFoundException(`Product #${productId} not found`);
 
       // 等 2 秒：让外部有时间修改数据，观察当前隔离级别是否"隔离"了这次修改
       await this.sleep(2000);
@@ -524,8 +589,10 @@ export class OrdersService {
       const isIsolated = firstStock === secondStock;
 
       const snapshotNotes: Record<string, string> = {
-        'READ UNCOMMITTED': '可读未提交数据，两次读可能因对方未提交的修改而不同',
-        'READ COMMITTED': '每次读取最新已提交快照，两次读可能不同（不可重复读）',
+        'READ UNCOMMITTED':
+          '可读未提交数据，两次读可能因对方未提交的修改而不同',
+        'READ COMMITTED':
+          '每次读取最新已提交快照，两次读可能不同（不可重复读）',
         'REPEATABLE READ': 'MVCC 快照隔离，同一事务内两次读结果一致（推荐）',
         SERIALIZABLE: '完全串行，两次读绝对一致，但会阻塞其他写操作',
       };
@@ -576,7 +643,8 @@ export class OrdersService {
         .setLock('pessimistic_read') // LOCK IN SHARE MODE
         .getOne();
 
-      if (!product) throw new NotFoundException(`Product #${productId} not found`);
+      if (!product)
+        throw new NotFoundException(`Product #${productId} not found`);
 
       this.logger.log(
         `[SharedLock] 获得共享锁，stock=${product.stock}，持锁 2 秒...`,
@@ -633,7 +701,8 @@ export class OrdersService {
         .setLock('pessimistic_write') // FOR UPDATE
         .getOne();
 
-      if (!product) throw new NotFoundException(`Product #${productId} not found`);
+      if (!product)
+        throw new NotFoundException(`Product #${productId} not found`);
 
       const waitedMs = Date.now() - start; // 等锁花费的时间
       this.logger.log(
@@ -694,7 +763,9 @@ export class OrdersService {
         .setLock('pessimistic_write')
         .getOne();
 
-      this.logger.warn(`[Deadlock] 事务A 锁定了 productA，等待 300ms 后尝试锁 productB`);
+      this.logger.warn(
+        `[Deadlock] 事务A 锁定了 productA，等待 300ms 后尝试锁 productB`,
+      );
       await this.sleep(300); // 确保事务 B 已锁定 productIdB
 
       // A 再锁 productIdB（此时 B 持有这个锁，A 等待）
@@ -718,7 +789,9 @@ export class OrdersService {
         .setLock('pessimistic_write')
         .getOne();
 
-      this.logger.warn(`[Deadlock] 事务B 锁定了 productB，等待 200ms 后尝试锁 productA`);
+      this.logger.warn(
+        `[Deadlock] 事务B 锁定了 productB，等待 200ms 后尝试锁 productA`,
+      );
       await this.sleep(200); // 确保事务 A 已在等 productIdB
 
       // B 再锁 productIdA（此时 A 持有这个锁，B 等待 → 死锁！）
@@ -739,15 +812,23 @@ export class OrdersService {
     const bFailed = resultB.status === 'rejected';
 
     if (!aFailed && !bFailed) {
-      return { result: '⚠️ 未触发死锁（两个商品 ID 可能相同，或数据不存在）', winner: '', loser: '' };
+      return {
+        result: '⚠️ 未触发死锁（两个商品 ID 可能相同，或数据不存在）',
+        winner: '',
+        loser: '',
+      };
     }
 
-    loserLabel = aFailed ? '事务A（被 MySQL 选为回滚目标）' : '事务B（被 MySQL 选为回滚目标）';
+    loserLabel = aFailed
+      ? '事务A（被 MySQL 选为回滚目标）'
+      : '事务B（被 MySQL 选为回滚目标）';
     const loserErr = aFailed
-      ? (resultA as PromiseRejectedResult).reason
+      ? resultA.reason
       : (resultB as PromiseRejectedResult).reason;
 
-    this.logger.error(`[Deadlock] 死锁回滚方：${loserLabel}，错误：${loserErr?.message}`);
+    this.logger.error(
+      `[Deadlock] 死锁回滚方：${loserLabel}，错误：${loserErr?.message}`,
+    );
 
     return {
       result: '✅ 死锁触发成功！MySQL 自动检测到循环等待，回滚了代价更小的事务',

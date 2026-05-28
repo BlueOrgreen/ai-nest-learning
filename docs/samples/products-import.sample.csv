@@ -1,0 +1,4 @@
+name,price,stock,status,description
+珍珠奶茶,18.00,100,active,经典款
+芝士奶盖绿茶,22.00,80,active,
+无效行,-5,10,active,价格非法

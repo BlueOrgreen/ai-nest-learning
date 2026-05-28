@@ -1,7 +1,10 @@
 import { Processor, WorkerHost, OnWorkerEvent } from '@nestjs/bullmq';
 import { Logger } from '@nestjs/common';
 import { Job } from 'bullmq';
-import { NOTIFICATION_QUEUE, ORDER_CREATED_JOB } from './notification.constants';
+import {
+  NOTIFICATION_QUEUE,
+  ORDER_CREATED_JOB,
+} from './notification.constants';
 
 /**
  * 订单通知消费者（Consumer）
@@ -45,7 +48,8 @@ export class NotificationProcessor extends WorkerHost {
    *   生产环境建议用 orderId 做幂等检查（Redis SET NX），避免重复发邮件。
    */
   private async handleOrderCreated(job: Job): Promise<void> {
-    const { orderId, userId, productId, quantity, amount, createdAt } = job.data;
+    const { orderId, userId, productId, quantity, amount, createdAt } =
+      job.data;
 
     this.logger.log(
       `[order-created] 开始处理 Job #${job.id}（第 ${job.attemptsMade + 1} 次尝试）`,
@@ -54,12 +58,12 @@ export class NotificationProcessor extends WorkerHost {
     // ── 模拟发送通知（替换为真实邮件/短信逻辑）────────────────
     this.logger.log(
       `📧 [模拟通知] 订单确认邮件已发送\n` +
-      `   订单ID   : ${orderId}\n` +
-      `   用户ID   : ${userId}\n` +
-      `   商品ID   : ${productId}\n` +
-      `   数量     : ${quantity}\n` +
-      `   金额     : ¥${amount}\n` +
-      `   创建时间 : ${createdAt}`,
+        `   订单ID   : ${orderId}\n` +
+        `   用户ID   : ${userId}\n` +
+        `   商品ID   : ${productId}\n` +
+        `   数量     : ${quantity}\n` +
+        `   金额     : ¥${amount}\n` +
+        `   创建时间 : ${createdAt}`,
     );
     // ─────────────────────────────────────────────────────────
 

@@ -1,0 +1,7 @@
+{"file": ".trellis/tasks/05-20-product-management/prd.md", "reason": "Requirements and acceptance criteria for product management module"}
+{"file": ".trellis/tasks/05-20-product-management/info.md", "reason": "Technical design, API contracts, PR breakdown"}
+{"file": ".trellis/spec/backend/index.md", "reason": "Backend guidelines index"}
+{"file": ".trellis/spec/backend/directory-structure.md", "reason": "Module and file layout conventions"}
+{"file": ".trellis/spec/backend/database-guidelines.md", "reason": "Entity, enum, soft-delete, transaction patterns"}
+{"file": ".trellis/spec/backend/error-handling.md", "reason": "Exception types and HTTP status conventions"}
+{"file": ".trellis/spec/backend/quality-guidelines.md", "reason": "Code quality and forbidden patterns"}

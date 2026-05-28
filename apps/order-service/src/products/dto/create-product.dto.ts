@@ -1,4 +1,15 @@
-import { IsInt, IsNotEmpty, IsNumber, IsPositive, IsString, Min } from 'class-validator';
+import {
+  IsIn,
+  IsInt,
+  IsNotEmpty,
+  IsNumber,
+  IsOptional,
+  IsPositive,
+  IsString,
+  MaxLength,
+  Min,
+} from 'class-validator';
+import { PRODUCT_STATUSES } from '../entities/product-status';
 
 export class CreateProductDto {
   @IsString()
@@ -12,4 +23,13 @@ export class CreateProductDto {
   @IsInt()
   @Min(0)
   stock: number;
+
+  @IsOptional()
+  @IsIn(PRODUCT_STATUSES)
+  status?: string;
+
+  @IsOptional()
+  @IsString()
+  @MaxLength(500)
+  description?: string;
 }

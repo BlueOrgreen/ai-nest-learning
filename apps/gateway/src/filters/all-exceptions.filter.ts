@@ -32,6 +32,16 @@ export class AllExceptionsFilter implements ExceptionFilter {
   private readonly logger = new Logger('Exception');
 
   // 常见状态码的友好中文提示
+  private readonly genericMessages = new Set([
+    'Bad Request',
+    'Unauthorized',
+    'Forbidden',
+    'Not Found',
+    'Internal Server Error',
+    'Conflict',
+    'Unprocessable Entity',
+  ]);
+
   private readonly friendlyMap: Record<number, string> = {
     400: '请求参数有误，请检查后重试',
     401: '请先登录，或 Token 已过期',
@@ -43,6 +53,30 @@ export class AllExceptionsFilter implements ExceptionFilter {
     503: '服务暂时不可用，请稍后再试',
   };
 
+  private extractHttpMessage(body: unknown): string | null {
+    if (typeof body === 'string') {
+      return body;
+    }
+    if (typeof body === 'object' && body !== null) {
+      const raw = (body as Record<string, unknown>).message;
+      if (Array.isArray(raw)) {
+        const parts = raw.map((m) => String(m)).filter((m) => m.length > 0);
+        return parts.length > 0 ? parts.join('; ') : null;
+      }
+      if (raw != null && String(raw).length > 0) {
+        return String(raw);
+      }
+    }
+    return null;
+  }
+
+  private resolveMessage(status: number, extracted: string | null): string {
+    if (extracted && !this.genericMessages.has(extracted)) {
+      return extracted;
+    }
+    return this.friendlyMap[status] ?? extracted ?? this.friendlyMap[500];
+  }
+
   catch(exception: unknown, host: ArgumentsHost): void {
     const ctx = host.switchToHttp();
     const req = ctx.getRequest<Request>();
@@ -53,28 +87,20 @@ export class AllExceptionsFilter implements ExceptionFilter {
 
     if (exception instanceof HttpException) {
       status = exception.getStatus();
-      const body = exception.getResponse();
-
-      // NestJS 异常的 response body 可能是 string 或 { message, error, statusCode }
-      if (typeof body === 'string') {
-        message = body;
-      } else if (typeof body === 'object' && body !== null) {
-        const rawMessage = (body as Record<string, unknown>).message;
-        // ValidationPipe 错误时 message 是数组，取第一条
-        message = Array.isArray(rawMessage)
-          ? String(rawMessage[0])
-          : String(rawMessage ?? message);
-      }
+      message = this.resolveMessage(
+        status,
+        this.extractHttpMessage(exception.getResponse()),
+      );
     }
-
-    // 用友好提示覆盖，若无映射则保留原始 message
-    message = this.friendlyMap[status] ?? message;
 
     // 记录错误日志（5xx 用 error 级别，4xx 用 warn）
     const requestId = (req.headers['x-request-id'] as string) ?? '-';
     const logMsg = `[${requestId}] ${req.method} ${req.originalUrl} → ${status} ${message}`;
     if (status >= 500) {
-      this.logger.error(logMsg, exception instanceof Error ? exception.stack : String(exception));
+      this.logger.error(
+        logMsg,
+        exception instanceof Error ? exception.stack : String(exception),
+      );
     } else {
       this.logger.warn(logMsg);
     }

@@ -1,4 +1,14 @@
-import { IsInt, IsNumber, IsOptional, IsPositive, IsString, Min } from 'class-validator';
+import {
+  IsIn,
+  IsInt,
+  IsNumber,
+  IsOptional,
+  IsPositive,
+  IsString,
+  MaxLength,
+  Min,
+} from 'class-validator';
+import { PRODUCT_STATUSES } from '../entities/product-status';
 
 export class UpdateProductDto {
   @IsString()
@@ -14,4 +24,13 @@ export class UpdateProductDto {
   @Min(0)
   @IsOptional()
   stock?: number;
+
+  @IsOptional()
+  @IsIn(PRODUCT_STATUSES)
+  status?: string;
+
+  @IsOptional()
+  @IsString()
+  @MaxLength(500)
+  description?: string;
 }

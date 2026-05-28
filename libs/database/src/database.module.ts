@@ -23,8 +23,8 @@ import { TypeOrmModule } from '@nestjs/typeorm';
       inject: [ConfigService],
       useFactory: (config: ConfigService) => ({
         type: 'mysql',
-        host:     config.get<string>('DB_HOST', 'localhost'),
-        port:     config.get<number>('DB_PORT', 3306),
+        host: config.get<string>('DB_HOST', 'localhost'),
+        port: config.get<number>('DB_PORT', 3306),
         username: config.get<string>('DB_USERNAME', 'root'),
         password: config.get<string>('DB_PASSWORD', ''),
         database: config.get<string>('DB_DATABASE', 'nest_db'),
@@ -38,7 +38,7 @@ import { TypeOrmModule } from '@nestjs/typeorm';
         // 连接池配置（mysql2 驱动通过 extra 字段传入）
         extra: {
           connectionLimit: config.get<number>('DB_POOL_SIZE', 10),
-          connectTimeout:  config.get<number>('DB_CONNECT_TIMEOUT', 10000),
+          connectTimeout: config.get<number>('DB_CONNECT_TIMEOUT', 10000),
         },
       }),
     }),

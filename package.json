@@ -14,8 +14,8 @@
     "start:prod": "node dist/apps/gateway/main",
     "start:gateway": "nest start gateway --watch",
     "start:user": "nest start user-service --watch",
-    "dev": "LANG=zh_CN.UTF-8 mprocs -c mprocs.yaml",
     "start:order": "nest start order-service --watch --preserveWatchOutput",
+    "dev": "LANG=zh_CN.UTF-8 mprocs -c mprocs.yaml",
     "lint": "eslint \"{src,apps,libs,test}/**/*.ts\" --fix",
     "test": "jest",
     "test:watch": "jest --watch",
@@ -25,7 +25,11 @@
     "test:e2e:gateway": "jest --config ./test/jest-e2e.json --testPathPatterns=gateway-proxy",
     "test:e2e:user": "jest --config ./test/jest-e2e.json --testPathPatterns=user-service",
     "test:e2e:order": "jest --config ./test/jest-e2e.json --testPathPatterns=order-service",
-    "test:e2e:auth": "jest --config ./test/jest-e2e.json --testPathPatterns=gateway-auth"
+    "test:e2e:auth": "jest --config ./test/jest-e2e.json --testPathPatterns=gateway-auth",
+    "seed:products": "ts-node --transpile-only -r tsconfig-paths/register apps/order-service/src/products/seed.ts",
+    "seed:products:sql": "ts-node --transpile-only -r tsconfig-paths/register apps/order-service/src/products/seed-sql.ts",
+    "migrate:local": "ts-node --transpile-only scripts/migrate-local.ts",
+    "migrate:local:status": "ts-node --transpile-only scripts/migrate-local.ts -- --status"
   },
   "dependencies": {
     "@bull-board/api": "^7.0.0",

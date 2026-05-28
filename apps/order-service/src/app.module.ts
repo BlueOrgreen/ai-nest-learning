@@ -15,7 +15,7 @@ import { HealthController } from './health/health.controller';
     ConfigModule.forRoot({
       envFilePath: [
         'apps/order-service/.env', // DB_DATABASE=nest_order_service
-        '.env',                    // DB_HOST / DB_PORT / DB_USERNAME / 连接池等公共变量
+        '.env', // DB_HOST / DB_PORT / DB_USERNAME / 连接池等公共变量
       ],
       isGlobal: true,
     }),
