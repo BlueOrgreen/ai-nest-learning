@@ -21,22 +21,20 @@ services:
       - mysql_data:/var/lib/mysql
     restart: unless-stopped
 
+  redis:
+    image: redis:7-alpine
+    restart: unless-stopped
+
   gateway:
     build:
       context: .
       dockerfile: apps/gateway/Dockerfile
     environment:
-      - DB_HOST=mysql
-      - DB_PORT=3306
-      - DB_USER=root
-      - DB_PASSWORD=${MYSQL_ROOT_PASSWORD}
-      - DB_NAME=${MYSQL_DATABASE}
-      - JWT_SECRET=${JWT_SECRET}
+      - JWT_SECRET=${JWT_SECRET:-my-firstnest-secret-2026}
       - CORS_ORIGINS=${CORS_ORIGINS:-https://www.admin.chenchar.com,http://localhost:3000}
       - USER_SERVICE_URL=${USER_SERVICE_URL:-http://user-service:3001}
       - ORDER_SERVICE_URL=${ORDER_SERVICE_URL:-http://order-service:3002}
     depends_on:
-      - mysql
       - user-service
       - order-service
     restart: unless-stopped
@@ -48,9 +46,10 @@ services:
     environment:
       - DB_HOST=mysql
       - DB_PORT=3306
-      - DB_USER=root
+      - DB_USERNAME=root
       - DB_PASSWORD=${MYSQL_ROOT_PASSWORD}
-      - DB_NAME=${MYSQL_DATABASE}
+      - DB_DATABASE=${MYSQL_DATABASE}
+      - DB_SYNCHRONIZE=${DB_SYNCHRONIZE:-true}
     depends_on:
       - mysql
     restart: unless-stopped
@@ -62,11 +61,16 @@ services:
     environment:
       - DB_HOST=mysql
       - DB_PORT=3306
-      - DB_USER=root
+      - DB_USERNAME=root
       - DB_PASSWORD=${MYSQL_ROOT_PASSWORD}
-      - DB_NAME=${MYSQL_DATABASE}
+      - DB_DATABASE=${MYSQL_DATABASE}
+      - DB_SYNCHRONIZE=${DB_SYNCHRONIZE:-true}
+      - REDIS_HOST=redis
+      - REDIS_PORT=6379
+      - USER_SERVICE_URL=http://user-service:3001
     depends_on:
       - mysql
+      - redis
     restart: unless-stopped
 
   web-nest:

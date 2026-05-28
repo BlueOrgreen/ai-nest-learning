@@ -1,0 +1,1 @@
+{"version":3,"file":"database.health.js","sourceRoot":"","sources":["database.health.ts"],"names":[],"mappings":";;;;;;;;;AAAA,2CAAwC;AACxC,+CAA0E;AAyBnE,IAAM,oBAAoB,GAA1B,MAAM,oBAAoB;CAAG,CAAA;AAAvB,oDAAoB;+BAApB,oBAAoB;IAPhC,IAAA,eAAM,EAAC;QACN,OAAO,EAAE,CAAC,yBAAc,CAAC;QAGzB,SAAS,EAAE,CAAC,iCAAsB,CAAC;QACnC,OAAO,EAAE,CAAC,yBAAc,EAAE,iCAAsB,CAAC;KAClD,CAAC;GACW,oBAAoB,CAAG"}
