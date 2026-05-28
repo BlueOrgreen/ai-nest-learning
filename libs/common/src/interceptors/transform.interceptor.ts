@@ -34,15 +34,16 @@ export interface ApiResponse<T> {
  *     - gateway（gateway 版本）：通过 @SkipTransform() 跳过 proxy 路由
  */
 @Injectable()
-export class TransformInterceptor<T>
-  implements NestInterceptor<T, ApiResponse<T>>
-{
+export class TransformInterceptor<T> implements NestInterceptor<
+  T,
+  ApiResponse<T>
+> {
   intercept(
     context: ExecutionContext,
     next: CallHandler<T>,
   ): Observable<ApiResponse<T>> {
-    return next.handle().pipe(
-      map((data): ApiResponse<T> => ({ code: 0, data, message: 'ok' })),
-    );
+    return next
+      .handle()
+      .pipe(map((data): ApiResponse<T> => ({ code: 0, data, message: 'ok' })));
   }
 }

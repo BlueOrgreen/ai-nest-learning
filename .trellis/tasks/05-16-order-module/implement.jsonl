@@ -1,0 +1,6 @@
+{"file": ".trellis/spec/backend/index.md", "reason": "后端开发规范和约定"}
+{"file": ".trellis/spec/backend/directory-structure.md", "reason": "后端代码目录结构规范"}
+{"file": ".trellis/spec/frontend/index.md", "reason": "前端开发规范和约定"}
+{"file": ".trellis/spec/frontend/directory-structure.md", "reason": "前端代码目录结构规范"}
+{"file": "apps/order-service/src/orders/entities/order.entity.ts", "reason": "Order 实体定义"}
+{"file": "apps/order-service/src/orders/orders.controller.ts", "reason": "订单 API 接口定义"}

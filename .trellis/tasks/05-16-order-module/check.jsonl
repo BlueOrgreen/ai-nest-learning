@@ -1,0 +1,4 @@
+{"file": ".trellis/spec/backend/quality-guidelines.md", "reason": "后端质量规范 - lint/typecheck 要求"}
+{"file": ".trellis/spec/frontend/quality-guidelines.md", "reason": "前端质量规范 - lint/typecheck 要求"}
+{"file": ".trellis/spec/frontend/component-guidelines.md", "reason": "UI 组件规范 - shadcn/ui 使用规范"}
+{"file": ".trellis/spec/frontend/hook-guidelines.md", "reason": "React Hooks 规范"}

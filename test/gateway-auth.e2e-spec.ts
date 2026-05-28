@@ -45,7 +45,12 @@ describe('Gateway Auth & JWT (e2e)', () => {
 
   const mockUsers = [
     { id: 'user-uuid-1', name: 'Alice', email: 'alice@test.com', role: 'user' },
-    { id: 'admin-uuid-1', name: 'Admin', email: 'admin@test.com', role: 'admin' },
+    {
+      id: 'admin-uuid-1',
+      name: 'Admin',
+      email: 'admin@test.com',
+      role: 'admin',
+    },
   ];
 
   beforeEach(async () => {
@@ -55,7 +60,11 @@ describe('Gateway Auth & JWT (e2e)', () => {
 
     app = moduleFixture.createNestApplication();
     app.useGlobalPipes(
-      new ValidationPipe({ whitelist: true, transform: true, forbidNonWhitelisted: true }),
+      new ValidationPipe({
+        whitelist: true,
+        transform: true,
+        forbidNonWhitelisted: true,
+      }),
     );
     await app.init();
 

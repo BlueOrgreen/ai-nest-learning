@@ -18,7 +18,7 @@ import {
 @Injectable()
 export class FallbackService {
   private readonly logger = new Logger(FallbackService.name);
-  
+
   // 降级策略配置映射
   private strategyMap: FallbackStrategyMap = {
     [DOWNSTREAM_TARGETS.USER_SERVICE]: {
@@ -94,7 +94,10 @@ export class FallbackService {
   };
 
   // 缓存最近的成功响应
-  private responseCache = new Map<string, { response: any; timestamp: number }>();
+  private responseCache = new Map<
+    string,
+    { response: any; timestamp: number }
+  >();
   private readonly cacheMaxSize = 100;
   private readonly cacheTtl = 30000; // 30秒
 
@@ -120,11 +123,11 @@ export class FallbackService {
   ): FallbackResponse {
     // 查找匹配的降级配置
     const config = this.findFallbackConfig(target, path);
-    
+
     // 根据策略生成响应
     let responseBody: any;
     let statusCode: number = FALLBACK_RESPONSES.DEFAULT_STATUS_CODE;
-    
+
     switch (config.strategy) {
       case 'static':
         responseBody = config.data || {
@@ -134,7 +137,7 @@ export class FallbackService {
           timestamp: new Date().toISOString(),
         };
         break;
-        
+
       case 'cached':
         responseBody = this.getCachedResponse(target, path) || {
           message: 'Service unavailable. No cached response available.',
@@ -144,7 +147,7 @@ export class FallbackService {
         };
         statusCode = 200; // 缓存响应返回200
         break;
-        
+
       case 'stub':
         responseBody = this.generateStubData(target, path, originalRequest) || {
           message: 'Service unavailable. Using stub data.',
@@ -154,9 +157,13 @@ export class FallbackService {
         };
         statusCode = 200; // 存根数据返回200
         break;
-        
+
       case 'degraded':
-        responseBody = this.generateDegradedResponse(target, path, originalRequest) || {
+        responseBody = this.generateDegradedResponse(
+          target,
+          path,
+          originalRequest,
+        ) || {
           message: 'Service unavailable. Functionality degraded.',
           target,
           path,
@@ -164,7 +171,7 @@ export class FallbackService {
         };
         statusCode = 200; // 功能降级返回200
         break;
-        
+
       default:
         responseBody = {
           message: FALLBACK_RESPONSES.DEFAULT_MESSAGE,
@@ -174,7 +181,9 @@ export class FallbackService {
         };
     }
 
-    this.logger.warn(`Returning fallback response for ${target}${path} (strategy: ${config.strategy})`);
+    this.logger.warn(
+      `Returning fallback response for ${target}${path} (strategy: ${config.strategy})`,
+    );
 
     return {
       statusCode,
@@ -242,16 +251,16 @@ export class FallbackService {
   private getCachedResponse(target: string, path: string): any | null {
     const cacheKey = `${target}:${path}`;
     const cached = this.responseCache.get(cacheKey);
-    
+
     if (!cached) return null;
-    
+
     // 检查缓存是否过期
     const now = Date.now();
     if (now - cached.timestamp > this.cacheTtl) {
       this.responseCache.delete(cacheKey);
       return null;
     }
-    
+
     return cached.response;
   }
 
@@ -260,10 +269,10 @@ export class FallbackService {
    */
   cacheResponse(target: string, path: string, response: any): void {
     const cacheKey = `${target}:${path}`;
-    
+
     // 清理过期缓存
     this.cleanupCache();
-    
+
     // 检查缓存大小
     if (this.responseCache.size >= this.cacheMaxSize) {
       // 删除最旧的缓存
@@ -272,12 +281,12 @@ export class FallbackService {
         this.responseCache.delete(oldestKey);
       }
     }
-    
+
     this.responseCache.set(cacheKey, {
       response,
       timestamp: Date.now(),
     });
-    
+
     this.logger.debug(`Cached response for ${cacheKey}`);
   }
 
@@ -286,7 +295,7 @@ export class FallbackService {
    */
   private cleanupCache(): void {
     const now = Date.now();
-    
+
     for (const [key, value] of this.responseCache.entries()) {
       if (now - value.timestamp > this.cacheTtl) {
         this.responseCache.delete(key);
@@ -315,7 +324,7 @@ export class FallbackService {
         isStub: true,
       };
     }
-    
+
     if (path.includes('/orders')) {
       return {
         id: 'stub-order-id',
@@ -327,7 +336,7 @@ export class FallbackService {
         isStub: true,
       };
     }
-    
+
     if (path.includes('/products')) {
       return {
         id: 'stub-product-id',
@@ -337,7 +346,7 @@ export class FallbackService {
         isStub: true,
       };
     }
-    
+
     return null;
   }
 
@@ -355,7 +364,7 @@ export class FallbackService {
   ): any {
     // 根据请求方法决定降级策略
     const method = originalRequest?.method?.toUpperCase() || 'GET';
-    
+
     if (method === 'GET') {
       // 读操作返回空数据
       if (path.includes('/users')) return { users: [] };
@@ -383,7 +392,7 @@ export class FallbackService {
     if (!this.strategyMap[target]) {
       this.strategyMap[target] = {};
     }
-    
+
     this.strategyMap[target][pathPattern] = config;
     this.logger.log(`Updated fallback config for ${target}${pathPattern}`);
   }
@@ -393,13 +402,13 @@ export class FallbackService {
    */
   removeFallbackConfig(target: string, pathPattern: string): boolean {
     if (!this.strategyMap[target]) return false;
-    
+
     if (this.strategyMap[target][pathPattern]) {
       delete this.strategyMap[target][pathPattern];
       this.logger.log(`Removed fallback config for ${target}${pathPattern}`);
       return true;
     }
-    
+
     return false;
   }
 

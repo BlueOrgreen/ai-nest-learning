@@ -22,16 +22,21 @@ export class ResilienceStatusController {
   getCircuitBreakerStatus() {
     const status = this.circuitBreakerService.getAllStatus();
     const configs = this.fallbackService.getAllConfigs();
-    
+
     return {
       timestamp: new Date().toISOString(),
       circuitBreakers: status,
       fallbackConfigs: configs,
       summary: {
         totalBreakers: Object.keys(status).length,
-        openBreakers: Object.values(status).filter(s => s.state === 'open').length,
-        halfOpenBreakers: Object.values(status).filter(s => s.state === 'half-open').length,
-        closedBreakers: Object.values(status).filter(s => s.state === 'closed').length,
+        openBreakers: Object.values(status).filter((s) => s.state === 'open')
+          .length,
+        halfOpenBreakers: Object.values(status).filter(
+          (s) => s.state === 'half-open',
+        ).length,
+        closedBreakers: Object.values(status).filter(
+          (s) => s.state === 'closed',
+        ).length,
       },
     };
   }
@@ -41,20 +46,23 @@ export class ResilienceStatusController {
   @ApiResponse({ status: 200, description: '系统健康状态' })
   getHealth() {
     const status = this.circuitBreakerService.getAllStatus();
-    const openBreakers = Object.values(status).filter(s => s.state === 'open');
-    
+    const openBreakers = Object.values(status).filter(
+      (s) => s.state === 'open',
+    );
+
     return {
       status: openBreakers.length === 0 ? 'healthy' : 'degraded',
       timestamp: new Date().toISOString(),
-      openBreakers: openBreakers.map(s => ({
-        target: Object.keys(status).find(key => status[key] === s),
+      openBreakers: openBreakers.map((s) => ({
+        target: Object.keys(status).find((key) => status[key] === s),
         state: s.state,
         failureRate: s.failureRate,
         lastFailureAt: s.lastFailureAt,
       })),
-      message: openBreakers.length === 0 
-        ? 'All circuit breakers are closed' 
-        : `${openBreakers.length} circuit breaker(s) are open`,
+      message:
+        openBreakers.length === 0
+          ? 'All circuit breakers are closed'
+          : `${openBreakers.length} circuit breaker(s) are open`,
     };
   }
 

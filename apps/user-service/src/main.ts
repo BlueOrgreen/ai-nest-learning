@@ -9,9 +9,9 @@ async function bootstrap() {
 
   app.useGlobalPipes(
     new ValidationPipe({
-      whitelist: true,            // 自动过滤掉 DTO 中未声明的字段
+      whitelist: true, // 自动过滤掉 DTO 中未声明的字段
       forbidNonWhitelisted: true, // 有多余字段时直接报错
-      transform: true,            // 自动将请求体转换为 DTO 类实例
+      transform: true, // 自动将请求体转换为 DTO 类实例
     }),
   );
 

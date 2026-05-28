@@ -4,7 +4,10 @@ import axios from 'axios';
 import axiosRetry from 'axios-retry';
 import { ProxyController } from './proxy.controller';
 import { ProxyService } from './proxy.service';
-import { PROXY_ROUTES, PROXY_ROUTES_TOKEN } from '../config/proxy-routes.config';
+import {
+  PROXY_ROUTES,
+  PROXY_ROUTES_TOKEN,
+} from '../config/proxy-routes.config';
 import { ResilienceModule } from '../resilience/resilience.module';
 
 @Module({
@@ -26,15 +29,28 @@ import { ResilienceModule } from '../resilience/resilience.module';
             // 重试条件：网络错误或可重试的服务器错误
             const isNetworkError = axiosRetry.isNetworkError(error);
             const isRetryableError = axiosRetry.isRetryableError(error);
-            const isTimeoutError = error.code === 'ECONNABORTED' || error.code === 'ETIMEDOUT';
-            const is5xxError = error.response ? error.response.status >= 500 && error.response.status < 600 : false;
-            const is408Error = error.response ? error.response.status === 408 : false;
-            
-            return isNetworkError || isRetryableError || isTimeoutError || is5xxError || is408Error;
+            const isTimeoutError =
+              error.code === 'ECONNABORTED' || error.code === 'ETIMEDOUT';
+            const is5xxError = error.response
+              ? error.response.status >= 500 && error.response.status < 600
+              : false;
+            const is408Error = error.response
+              ? error.response.status === 408
+              : false;
+
+            return (
+              isNetworkError ||
+              isRetryableError ||
+              isTimeoutError ||
+              is5xxError ||
+              is408Error
+            );
           },
           // 在重试时记录日志
           onRetry: (retryCount, error, requestConfig) => {
-            console.debug(`[HTTP Retry] ${requestConfig.method?.toUpperCase()} ${requestConfig.url} - Attempt ${retryCount} - Error: ${error.message}`);
+            console.debug(
+              `[HTTP Retry] ${requestConfig.method?.toUpperCase()} ${requestConfig.url} - Attempt ${retryCount} - Error: ${error.message}`,
+            );
           },
         });
 

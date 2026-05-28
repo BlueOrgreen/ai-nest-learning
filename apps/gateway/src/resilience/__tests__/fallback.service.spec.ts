@@ -32,10 +32,10 @@ describe('FallbackService', () => {
     it('should return cached fallback if available', () => {
       const target = 'http://localhost:3001';
       const path = '/api/users';
-      
+
       // 先缓存一个响应
       service.cacheResponse(target, path, { users: [{ id: 1, name: 'test' }] });
-      
+
       const response = service.getFallbackResponse(target, path);
       expect(response.body).toHaveProperty('users');
     });
@@ -56,9 +56,9 @@ describe('FallbackService', () => {
       const target = 'http://localhost:3001';
       const path = '/api/test';
       const data = { test: true };
-      
+
       service.cacheResponse(target, path, data);
-      
+
       // 直接检查缓存（通过私有方法，这里简化）
       // 实际中可能需要使用反射或公共方法
       expect(service).toBeDefined();

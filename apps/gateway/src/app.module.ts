@@ -48,8 +48,6 @@ export class AppModule implements NestModule {
    *        它在中间件管道之前执行，专门应对浏览器 OPTIONS 预检请求。
    */
   configure(consumer: MiddlewareConsumer): void {
-    consumer
-      .apply(RequestIdMiddleware, LoggerMiddleware)
-      .forRoutes('*');
+    consumer.apply(RequestIdMiddleware, LoggerMiddleware).forRoutes('*');
   }
 }

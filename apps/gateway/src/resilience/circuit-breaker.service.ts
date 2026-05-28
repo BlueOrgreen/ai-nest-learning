@@ -18,12 +18,13 @@ import { DEFAULT_CIRCUIT_BREAKER_OPTIONS } from './constants/resilience.constant
 @Injectable()
 export class CircuitBreakerService implements OnModuleDestroy {
   private readonly logger = new Logger(CircuitBreakerService.name);
-  
+
   // 存储所有熔断器实例，key 为下游服务 target
   private readonly breakers = new Map<string, CircuitBreakerInstance>();
-  
+
   // 默认配置
-  private defaultOptions: CircuitBreakerOptions = DEFAULT_CIRCUIT_BREAKER_OPTIONS;
+  private defaultOptions: CircuitBreakerOptions =
+    DEFAULT_CIRCUIT_BREAKER_OPTIONS;
 
   /**
    * 执行通过熔断器保护的异步操作
@@ -38,7 +39,7 @@ export class CircuitBreakerService implements OnModuleDestroy {
     options: CircuitBreakerOptions = {},
   ): Promise<T> {
     const breaker = this.getOrCreateBreaker(target, options);
-    
+
     try {
       const result = await breaker.breaker.fire(operation);
       return result as T;
@@ -48,11 +49,14 @@ export class CircuitBreakerService implements OnModuleDestroy {
       if (error.name === 'CircuitBreakerOpenError' || breaker.breaker.opened) {
         throw new CircuitBreakerOpenError(target);
       }
-      
+
       if (error.name === 'TimeoutError') {
-        throw new CircuitBreakerTimeoutError(target, (breaker.breaker as any).timeout);
+        throw new CircuitBreakerTimeoutError(
+          target,
+          (breaker.breaker as any).timeout,
+        );
       }
-      
+
       // 其他错误直接抛出
       throw error;
     }
@@ -90,7 +94,11 @@ export class CircuitBreakerService implements OnModuleDestroy {
       stats: {
         failures: 0,
         successes: 0,
-        state: breaker.closed ? 'closed' : breaker.opened ? 'open' : 'half-open',
+        state: breaker.closed
+          ? 'closed'
+          : breaker.opened
+            ? 'open'
+            : 'half-open',
       },
     };
 
@@ -158,13 +166,19 @@ export class CircuitBreakerService implements OnModuleDestroy {
     instance.stats = {
       failures: stats.failures,
       successes: stats.successes,
-      state: instance.breaker.closed ? 'closed' : instance.breaker.opened ? 'open' : 'half-open',
-      lastFailureTime: stats.latencyTimes && stats.latencyTimes.length > 0 
-        ? new Date(Math.max(...stats.latencyTimes)) 
-        : undefined,
-      lastSuccessTime: stats.latencyTimes && stats.latencyTimes.length > 0
-        ? new Date(Math.min(...stats.latencyTimes))
-        : undefined,
+      state: instance.breaker.closed
+        ? 'closed'
+        : instance.breaker.opened
+          ? 'open'
+          : 'half-open',
+      lastFailureTime:
+        stats.latencyTimes && stats.latencyTimes.length > 0
+          ? new Date(Math.max(...stats.latencyTimes))
+          : undefined,
+      lastSuccessTime:
+        stats.latencyTimes && stats.latencyTimes.length > 0
+          ? new Date(Math.min(...stats.latencyTimes))
+          : undefined,
     };
   }
 
@@ -196,14 +210,14 @@ export class CircuitBreakerService implements OnModuleDestroy {
    */
   getAllStatus(): Record<string, CircuitBreakerStats> {
     const result: Record<string, CircuitBreakerStats> = {};
-    
+
     for (const [target, instance] of this.breakers.entries()) {
       const status = this.getStatus(target);
       if (status) {
         result[target] = status;
       }
     }
-    
+
     return result;
   }
 
@@ -239,17 +253,19 @@ export class CircuitBreakerService implements OnModuleDestroy {
     if (!instance) return false;
 
     // opossum 不支持动态更新配置，需要重新创建熔断器
-    this.logger.warn(`Cannot dynamically update circuit breaker config for ${target}. Recreating...`);
-    
+    this.logger.warn(
+      `Cannot dynamically update circuit breaker config for ${target}. Recreating...`,
+    );
+
     // 保存当前状态
     const currentStats = this.getStatus(target);
-    
+
     // 删除旧的熔断器
     this.breakers.delete(target);
-    
+
     // 创建新的熔断器
     this.getOrCreateBreaker(target, options);
-    
+
     this.logger.log(`Recreated circuit breaker for ${target} with new config`);
     return true;
   }
@@ -262,21 +278,24 @@ export class CircuitBreakerService implements OnModuleDestroy {
     let cleaned = 0;
 
     for (const [target, instance] of this.breakers.entries()) {
-      const lastUsed = instance.stats.lastFailureTime || instance.stats.lastSuccessTime;
-      
+      const lastUsed =
+        instance.stats.lastFailureTime || instance.stats.lastSuccessTime;
+
       if (!lastUsed) continue;
-      
+
       const age = now - lastUsed.getTime();
-      
+
       if (age > maxAgeMs) {
         // 关闭熔断器
         instance.breaker.close();
         this.breakers.delete(target);
-        this.logger.log(`Cleaned up unused circuit breaker for ${target} (age: ${age}ms)`);
+        this.logger.log(
+          `Cleaned up unused circuit breaker for ${target} (age: ${age}ms)`,
+        );
         cleaned++;
       }
     }
-    
+
     return cleaned;
   }
 
@@ -285,12 +304,12 @@ export class CircuitBreakerService implements OnModuleDestroy {
    */
   onModuleDestroy() {
     this.logger.log('Closing all circuit breakers...');
-    
+
     for (const [target, instance] of this.breakers.entries()) {
       instance.breaker.close();
       this.logger.debug(`Closed circuit breaker for ${target}`);
     }
-    
+
     this.breakers.clear();
   }
 }

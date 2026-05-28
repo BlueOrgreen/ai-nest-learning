@@ -1,4 +1,3 @@
-
 import {
   BadGatewayException,
   Inject,
@@ -56,7 +55,11 @@ export class ProxyService {
       );
 
       // 透传下游响应 headers（跳过无法设置的头）
-      const skipHeaders = new Set(['transfer-encoding', 'connection', 'keep-alive']);
+      const skipHeaders = new Set([
+        'transfer-encoding',
+        'connection',
+        'keep-alive',
+      ]);
       Object.entries(response.headers).forEach(([key, value]) => {
         if (!skipHeaders.has(key.toLowerCase()) && value) {
           res.setHeader(key, value as string);
@@ -64,7 +67,11 @@ export class ProxyService {
       });
 
       // 缓存成功的响应（用于降级策略）
-      this.fallbackService.cacheResponse(route.target, downstreamPath, response.data);
+      this.fallbackService.cacheResponse(
+        route.target,
+        downstreamPath,
+        response.data,
+      );
 
       res.status(response.status).json(response.data);
     } catch (error) {
@@ -75,15 +82,17 @@ export class ProxyService {
           downstreamPath,
           {
             method: req.method,
-            headers: headers as Record<string, string>,
+            headers: headers,
             body: req.body,
           },
         );
 
         // 设置降级响应头
-        Object.entries(fallbackResponse.headers || {}).forEach(([key, value]) => {
-          res.setHeader(key, value);
-        });
+        Object.entries(fallbackResponse.headers || {}).forEach(
+          ([key, value]) => {
+            res.setHeader(key, value);
+          },
+        );
 
         res.status(fallbackResponse.statusCode).json(fallbackResponse.body);
         this.logger.warn(

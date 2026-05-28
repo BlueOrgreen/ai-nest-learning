@@ -35,16 +35,16 @@ export interface ExecuteOptions {
 }
 
 // 熔断器事件类型
-export type CircuitBreakerEvent = 
-  | 'open'      // 熔断器打开
-  | 'close'     // 熔断器关闭
-  | 'halfOpen'  // 熔断器半开
-  | 'failure'   // 请求失败
-  | 'success'   // 请求成功
-  | 'timeout'   // 请求超时
-  | 'reject'    // 熔断器拒绝请求
-  | 'fire'      // 请求开始执行
-  | 'cacheHit'  // 缓存命中（如果启用缓存）;
+export type CircuitBreakerEvent =
+  | 'open' // 熔断器打开
+  | 'close' // 熔断器关闭
+  | 'halfOpen' // 熔断器半开
+  | 'failure' // 请求失败
+  | 'success' // 请求成功
+  | 'timeout' // 请求超时
+  | 'reject' // 熔断器拒绝请求
+  | 'fire' // 请求开始执行
+  | 'cacheHit'; // 缓存命中（如果启用缓存）;
 
 // 熔断器统计信息
 export interface CircuitBreakerStats {

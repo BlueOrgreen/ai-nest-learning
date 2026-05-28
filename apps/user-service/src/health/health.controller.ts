@@ -40,12 +40,13 @@ export class HealthController {
     description: '通过 @nestjs/terminus 执行 SELECT 1 探针，检测 DB 连通性。',
   })
   @ApiResponse({ status: 200, description: 'DB 正常，返回 { status: "ok" }' })
-  @ApiResponse({ status: 503, description: 'DB 异常，返回 { status: "error" }' })
+  @ApiResponse({
+    status: 503,
+    description: 'DB 异常，返回 { status: "error" }',
+  })
   @Get()
   @HealthCheck()
   check() {
-    return this.health.check([
-      () => this.db.pingCheck('database'),
-    ]);
+    return this.health.check([() => this.db.pingCheck('database')]);
   }
 }

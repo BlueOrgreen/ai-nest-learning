@@ -46,9 +46,10 @@ export interface ApiResponse<T> {
  *   代码意图更清晰，且未来路由实现方式变化时语义依然保留。
  */
 @Injectable()
-export class TransformInterceptor<T>
-  implements NestInterceptor<T, ApiResponse<T> | T>
-{
+export class TransformInterceptor<T> implements NestInterceptor<
+  T,
+  ApiResponse<T> | T
+> {
   constructor(private readonly reflector: Reflector) {}
 
   intercept(
@@ -65,8 +66,8 @@ export class TransformInterceptor<T>
     if (skip) return next.handle();
 
     // 无标记 → 包装为统一格式
-    return next.handle().pipe(
-      map((data): ApiResponse<T> => ({ code: 0, data, message: 'ok' })),
-    );
+    return next
+      .handle()
+      .pipe(map((data): ApiResponse<T> => ({ code: 0, data, message: 'ok' })));
   }
 }

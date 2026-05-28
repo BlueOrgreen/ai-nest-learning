@@ -21,10 +21,16 @@ export class AuthController {
    */
   @ApiOperation({
     summary: '用户登录',
-    description: '返回 JWT access_token。\n限流：5次/分钟（防暴力破解），超过后返回 429。',
+    description:
+      '返回 JWT access_token。\n限流：5次/分钟（防暴力破解），超过后返回 429。',
   })
-  @ApiBody({ schema: { example: { email: 'admin@example.com', password: '123456' } } })
-  @ApiResponse({ status: 200, description: '登录成功，返回 { access_token: "eyJ..." }' })
+  @ApiBody({
+    schema: { example: { email: 'admin@example.com', password: '123456' } },
+  })
+  @ApiResponse({
+    status: 200,
+    description: '登录成功，返回 { access_token: "eyJ..." }',
+  })
   @ApiResponse({ status: 401, description: '邮箱或密码错误' })
   @ApiResponse({ status: 429, description: '登录请求过于频繁（5次/分钟限制）' })
   @Throttle({ default: { limit: 5, ttl: 60000 } })

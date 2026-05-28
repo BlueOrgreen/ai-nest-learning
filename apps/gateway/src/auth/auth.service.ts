@@ -1,9 +1,5 @@
 import { HttpService } from '@nestjs/axios';
-import {
-  Injectable,
-  Logger,
-  UnauthorizedException,
-} from '@nestjs/common';
+import { Injectable, Logger, UnauthorizedException } from '@nestjs/common';
 import { JwtService } from '@nestjs/jwt';
 import { firstValueFrom } from 'rxjs';
 import { LoginDto } from './dto/login.dto';
@@ -52,14 +48,17 @@ export class AuthService {
       // 调用 user-service：GET /users?email=xxx（需要 user-service 支持此查询）
       // 备选方案：GET /users 全量拉取后在内存过滤（学习阶段可接受）
       const resp = await firstValueFrom(
-        this.httpService.get<ApiResponse<UserRecord[]>>(`${this.userServiceUrl}/users`),
+        this.httpService.get<ApiResponse<UserRecord[]>>(
+          `${this.userServiceUrl}/users`,
+        ),
       );
-      
+
       const users = resp.data.data ?? [];
-      console.log("yunfantresp=========>resp", users);
       return users.find((u) => u.email === email) ?? null;
     } catch (err) {
-      this.logger.error(`[AUTH] Failed to fetch users from user-service: ${(err as Error).message}`);
+      this.logger.error(
+        `[AUTH] Failed to fetch users from user-service: ${(err as Error).message}`,
+      );
       throw new UnauthorizedException('认证服务暂时不可用');
     }
   }

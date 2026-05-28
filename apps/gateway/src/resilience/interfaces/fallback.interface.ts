@@ -12,11 +12,11 @@ export interface FallbackResponse {
 }
 
 // 降级策略类型
-export type FallbackStrategy = 
-  | 'static'      // 静态响应
-  | 'cached'      // 缓存响应
-  | 'stub'        // 存根数据
-  | 'degraded';   // 功能降级
+export type FallbackStrategy =
+  | 'static' // 静态响应
+  | 'cached' // 缓存响应
+  | 'stub' // 存根数据
+  | 'degraded'; // 功能降级
 
 // 降级配置
 export interface FallbackConfig {

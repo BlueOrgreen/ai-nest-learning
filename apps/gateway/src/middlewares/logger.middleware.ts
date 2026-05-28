@@ -30,7 +30,9 @@ export class LoggerMiddleware implements NestMiddleware {
     const requestId = (req.headers['x-request-id'] as string) ?? '-';
 
     // 请求进入时打印一条日志，后续由 LoggingInterceptor 打印完成日志
-    this.logger.log(`【请求Request】[${requestId}] → ${method} ${originalUrl}  ${ip}  "${userAgent}"`);
+    this.logger.log(
+      `【请求Request】[${requestId}] → ${method} ${originalUrl}  ${ip}  "${userAgent}"`,
+    );
 
     next();
   }
